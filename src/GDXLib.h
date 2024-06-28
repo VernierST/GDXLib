@@ -21,8 +21,10 @@ class GDXLib
     int RSSI()                 { return _RSSI ;};
     int channelNumber()        { return _channelNumber ;};
     unsigned long samplePeriodInMilliseconds() { return _samplePeriodInMilliseconds;};
-    void open();
-    void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    //void open();
+    bool open();
+    //void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
     void stop();
     void start();
     void close();
@@ -65,7 +67,7 @@ class GDXLib
     void GoDirectBLE_Measure();
     void GoDirectBLE_Error();
     void GoDirectBLE_Start();
-    void GoDirectBLE_Scan();
+    bool GoDirectBLE_Scan();
     void GoDirectBLE_Reset();
     void GoDirectBLE_Read();
     void GoDirectBLE_GetStatus(char* strFirmwareVersion1, char* strFirmwareVersion2, byte& batteryPercent);

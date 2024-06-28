@@ -983,7 +983,7 @@ void GDXLib::GoDirectBLE_Error()
 //=============================================================================
 // open() Function
 //=============================================================================
-void GDXLib::open()  // This used to be labelled Begin
+bool GDXLib::open()  // This used to be labelled Begin
 {
   #if defined DEBUG
     Serial.println("***in open(GDX....");
@@ -993,12 +993,13 @@ void GDXLib::open()  // This used to be labelled Begin
   g_samplePeriodInMilliseconds = 0;
   g_autoConnect = true;//this will mean searching for any GDX device
   GoDirectBLE_Scan();
+  return true;
 
 } //end open
 //=============================================================================
 // open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds) Function
 //=============================================================================
-void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)
+bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)
 {
   #if defined DEBUG
     Serial.println("***in open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)");
@@ -1021,23 +1022,31 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
     Serial.print("***deviceName");
     Serial.println(deviceName);  
   #endif
-  GoDirectBLE_Scan();
+  if (!GoDirectBLE_Scan()) {
+    Serial.println("open failed, return = false");
+    return false;
+  }
+  else {
+    Serial.println("open success, return = true");
+    return true;
+  }
   } //end open
 
 
 //=============================================================================
 // GoDirectBLE_Scan() Function
 //=============================================================================
-  void GDXLib::GoDirectBLE_Scan()
+  bool GDXLib::GoDirectBLE_Scan()
   {
     Serial.println("Initializing ...");
     if (!BLE.begin()) {
       Serial.println("starting Bluetooth® Low Energy module failed");
       Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
-      while (1);
+      return false;
     }
 
-    Serial.println("Begin BLE Scan for Go Direct sensor");
+    Serial.print("Begin BLE Scan for: ");
+    Serial.println(g_deviceName);
     //BLE.scanForName(Str5, true);
     //BLE.scanForName(Str5);
     //BLE.scanForName("GDX-HD 151000C1");
@@ -1051,6 +1060,7 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
 
     Serial.println("Discovering ...");
     // loop until a peripheral is found
+    int i = 1;
     while (true) {
       BLEDevice peripheral = BLE.available();
       if (peripheral) {     //escape while loop if found
@@ -1060,8 +1070,10 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
         g_peripheral = peripheral;
         break;
       }
-    delay(500);
-    Serial.println("No peripheral, Scan again");
+    delay(1000);
+    Serial.print(i);
+    Serial.println(" No peripheral, Scan again");
+    i ++;
     }
 
     scanResult == D2PIO_SCAN_RESULT_SUCCESS;
@@ -1083,7 +1095,7 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
     } else {
       Serial.println("Failed to connect!");
       Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
-      while (1);
+      return false;
     }
 
     // discover peripheral attributes
@@ -1095,7 +1107,7 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
       Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
       g_peripheral.disconnect();
       //BLE.end(); Jorge only suggested peripheral.disonnect()
-      while (1);
+      return false;
     }
 
     // read and print device name of peripheral
@@ -1108,9 +1120,11 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
 
     delay(10);  // Kevin: seems okay without this delay//!!!
     if (!D2PIO_DiscoverService(g_peripheral)) //Kevin's Discover 
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
     if (!D2PIO_Init())
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
 
     // Wait for connection interval to finish negotiating
     delay(1000);
@@ -1122,20 +1136,26 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
     #endif
   
     if (!D2PIO_GetStatus())
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
     if (!D2PIO_GetDeviceInfo()) //Kevin's Setup
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
     if (!D2PIO_GetChannelInfoAll())
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
     
     if (!D2PIO_Autoset())//select default channel
-        GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
 
     if (!D2PIO_GetChannelInfo(g_channelNumber))
-          GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
 
     if (!D2PIO_SetMeasurementPeriod(g_samplePeriodInMilliseconds))
-      GoDirectBLE_Error();
+      //GoDirectBLE_Error();
+      return false;
     //below is the AutoID code, which really just reports:
 
     //below is the former AutoID code, which really sets values
@@ -1165,6 +1185,7 @@ void GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
     Serial.print("***_deviceName");
     Serial.println(_deviceName);
     #endif
+    return true;
 
     }  //end of while
 
