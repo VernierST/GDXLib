@@ -67,7 +67,10 @@ class GDXLib
     void GoDirectBLE_Measure();
     void GoDirectBLE_Error();
     void GoDirectBLE_Start();
-    bool GoDirectBLE_Scan();
+    bool GoDirectBLE_Scan_For_Name();
+    bool GoDirectBLE_Scan_Proximity();
+    bool GoDirectBLE_Connect();
+    bool GoDirectBLE_Discover_Attributes();
     void GoDirectBLE_Reset();
     void GoDirectBLE_Read();
     void GoDirectBLE_GetStatus(char* strFirmwareVersion1, char* strFirmwareVersion2, byte& batteryPercent);
