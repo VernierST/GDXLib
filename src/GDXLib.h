@@ -22,9 +22,10 @@ class GDXLib
     int channelNumber()        { return _channelNumber ;};
     unsigned long samplePeriodInMilliseconds() { return _samplePeriodInMilliseconds;};
     //void open();
-    bool open();
+    //bool open();
     //void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
-    bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    //bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    bool open(char* deviceName="proximity"); //default arguments added in .h file, not .cpp file
     void stop();
     void start();
     void close();

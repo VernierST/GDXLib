@@ -980,6 +980,7 @@ void GDXLib::GoDirectBLE_Error()
   else
     BLE.scanForName(g_deviceName, true);
 }
+/*
 //=============================================================================
 // open() Function
 //=============================================================================
@@ -1004,18 +1005,21 @@ bool GDXLib::open()  // This used to be labelled Begin
   }
 
 } //end open
+*/
 //=============================================================================
 // open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds) Function
 //=============================================================================
-bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)
+//bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)
+//bool GDXLib::open(char* deviceName="proximity")
+bool GDXLib::open(char* deviceName)
 {
   g_deviceName = deviceName;
-  g_channelNumber = channelNumber;
-  g_samplePeriodInMilliseconds = samplePeriodInMilliseconds;
-  
-  if (deviceName[3]=='*') 
-       g_autoConnect = true;//this allow for the search for any GDX device
-  else g_autoConnect = false;// search for one specific GDX device
+  //g_channelNumber = channelNumber;
+  g_channelNumber = 1;
+  //g_samplePeriodInMilliseconds = samplePeriodInMilliseconds;
+  g_samplePeriodInMilliseconds = 1000;
+  Serial.print("device name =  ");
+  Serial.println(g_deviceName);
   
   #if defined DEBUG
     Serial.println("***in open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds)");
@@ -1025,8 +1029,23 @@ bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
     Serial.println(g_channelNumber); 
   #endif
 
-  if (!GoDirectBLE_Scan_For_Name())
-    return false;
+  if (!BLE.begin()) {
+      Serial.println("starting Bluetooth® Low Energy module failed");
+      Serial.println("Disconnect, and then reconnect, the Arduino USB cable");
+      return false;
+  }
+
+  if (g_deviceName == "proximity") {
+    Serial.println("in proximity case..");
+    if (!GoDirectBLE_Scan_Proximity())
+      return false;
+  }
+  else {
+    Serial.println("in scan for name case..");
+    if (!GoDirectBLE_Scan_For_Name())
+      return false;
+  }
+
 
   if (!GoDirectBLE_Connect())
     return false;
@@ -1098,38 +1117,76 @@ bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
 //=============================================================================
   bool GDXLib::GoDirectBLE_Scan_Proximity()
   {
-    Serial.println("Initializing ...");
-    if (!BLE.begin()) {
-      Serial.println("starting Bluetooth® Low Energy module failed");
-      Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
-      return false;
-    }
 
-    Serial.print("Begin BLE Scan for: ");
-    Serial.println(g_deviceName);
+    Serial.print("Begin proximity scan for nearest Go Direct");
     Serial.println();
-    //BLE.scanForName(Str5, true);
-    //BLE.scanForName(Str5);
-    //BLE.scanForName("GDX-HD 151000C1");
-    BLE.scanForName(g_deviceName);
-    delay(1000);
 
-    Serial.println("Discovering ...");
+    BLE.scan(false); //
+    delay(100);
+    String strongest_device = "None";
+    String final_device = "None";
+    int strongest_rssi = -1000;
+    int threshold = -60; //modify threshold if needed
+    int i = 0;
+
     // loop until a peripheral is found
     while (true) {
+
+      // check if a peripheral has been discovered
       BLEDevice peripheral = BLE.available();
-      if (peripheral) {     //escape while loop if found
-        // discovered a peripheral
-        Serial.println("Discovered a peripheral! Scan stopped");
-        BLE.stopScan();
-        g_peripheral = peripheral;
-        break;
+      Serial.print(" i = ");
+      Serial.println(i);
+
+      if (peripheral) {
+        Serial.println("Discovered a peripheral");
+        Serial.print("Local Name: ");
+        
+        if (peripheral.hasLocalName()) {
+          Serial.println(peripheral.localName());
+          Serial.println("Is this GDX:  ");
+        
+          if ((peripheral.localName()[0] == 'G') &&
+          (peripheral.localName()[1] == 'D') &&
+          (peripheral.localName()[2] == 'X')) {
+          
+            Serial.println("YES");
+            Serial.print("RSSI: ");
+            Serial.println(peripheral.rssi());
+
+            if (peripheral.rssi() > strongest_rssi) {
+              strongest_rssi = peripheral.rssi();
+              strongest_device = peripheral.localName();
+              Serial.print("Set strongest RSSI to: ");
+              Serial.println(peripheral.localName());
+              Serial.println("");
+              g_peripheral = peripheral;
+            }
+          }
+          else {
+            Serial.println("NO");
+          }
+        }
       }
-    delay(1000);
-    Serial.println(" No peripheral, Scan again");
-    }
-    return true;
-  } //end Scan
+      else {
+        Serial.println("no peripheral found");
+      }
+      if (i > 10) {
+        if (strongest_rssi > threshold) {
+          Serial.println("Discovered proximity device! Scan stopped");
+          BLE.stopScan();
+          break; //device has been found
+        }
+        else {
+          Serial.println("no devices with rssi lower than threshold");
+        }
+      }
+      Serial.println("delay 100 ms");
+      delay(100);
+      i ++;
+    }  
+  return true; //device was found, while loop exited, end Scan For Name
+  }
+      
 
 
 //=============================================================================
@@ -1137,13 +1194,7 @@ bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
 //=============================================================================
   bool GDXLib::GoDirectBLE_Scan_For_Name()
   {
-    if (!BLE.begin()) {
-      Serial.println("starting Bluetooth® Low Energy module failed");
-      Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
-      return false;
-    }
-
-    Serial.print("Begin BLE Scan for: ");
+    Serial.print("Begin BLE Scan for name: ");
     Serial.println(g_deviceName);
     Serial.println();
 
@@ -1155,7 +1206,7 @@ bool GDXLib::open(char* deviceName, byte channelNumber, unsigned long samplePeri
       BLEDevice peripheral = BLE.available();
       if (peripheral) {     //escape while loop if found
         // discovered a peripheral
-        Serial.println("Discovered a peripheral! Scan stopped");
+        Serial.println("Discovered the Go Direct peripheral! Scan stopped");
         BLE.stopScan();
         g_peripheral = peripheral;
         break;
