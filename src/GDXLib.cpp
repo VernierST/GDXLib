@@ -980,32 +980,7 @@ void GDXLib::GoDirectBLE_Error()
   else
     BLE.scanForName(g_deviceName, true);
 }
-/*
-//=============================================================================
-// open() Function
-//=============================================================================
-bool GDXLib::open()  // This used to be labelled Begin
-{
-  #if defined DEBUG
-    Serial.println("***in open(GDX....");
-  #endif
-  Serial.println("in open()");
-  g_deviceName = NULL;
-  g_channelNumber = 255;//this will cause the default channel to be used
-  g_samplePeriodInMilliseconds = 0;
-  g_autoConnect = true;//this will mean searching for any GDX device
-  //GoDirectBLE_Scan();
-  if (!GoDirectBLE_Scan_Proximity()) {
-    Serial.println("open prox failed, return = false");
-    return false;
-  }
-  else {
-    Serial.println("open prox success, return = true");
-    return true;
-  }
 
-} //end open
-*/
 //=============================================================================
 // open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds) Function
 //=============================================================================
@@ -1015,8 +990,10 @@ bool GDXLib::open(char* deviceName)
 {
   g_deviceName = deviceName;
   //g_channelNumber = channelNumber;
+  //g_channelNumber = 255;//this will cause the default channel to be used
   g_channelNumber = 1;
   //g_samplePeriodInMilliseconds = samplePeriodInMilliseconds;
+  //g_samplePeriodInMilliseconds = 0; //does this cause the default to be used?
   g_samplePeriodInMilliseconds = 1000;
   Serial.print("device name =  ");
   Serial.println(g_deviceName);
