@@ -179,6 +179,7 @@ static struct D2PIOGetDeviceInfoCmdResponse        g_deviceInfo;
 static struct D2PIOGetSensorChannelInfoCmdResponse g_channelInfo;
 static char*                                       g_deviceName;
 static byte                                        g_channelNumber;
+static unsigned long                               g_sensorMask;
 static unsigned long                               g_samplePeriodInMilliseconds;
 static bool                                        g_autoConnect;
 static byte                                        g_rollingCounter = 0;
@@ -920,6 +921,41 @@ bool GDXLib::D2PIO_Autoset()
   #endif
   return true;
 }
+
+//=============================================================================
+// GDX_StartMeasurements() Function
+//=============================================================================
+bool GDXLib::GDX_StartMeasurements(unsigned long sensorMask)
+{
+   #if defined DEBUG
+      Serial.println ("***@@@ in D2PIO_StartMeasurement() Function");
+   #endif
+   Serial.print("GDX_StartMeasurement sensormask: ");
+   Serial.println(sensorMask);
+   byte command[] = {
+    0x58, 0x00, 0x00, 0x00, 0x18,
+    0xFF,
+    0x01,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+  command[7]  = (sensorMask >> 0)  & 0xFF;
+  command[8]  = (sensorMask >> 8)  & 0xFF;
+  command[9]  = (sensorMask >> 16) & 0xFF;
+  command[10] = (sensorMask >> 24) & 0xFF;
+
+  // Populate the packet header bytes
+  command[1] = sizeof(command);
+  command[2] = g_rollingCounter--;
+  command[3] = D2PIO_CalculateChecksum(command);
+
+  if (!D2PIO_Write(command)) return false;
+  if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;  
+  return true;
+}
+//end of D2PIO functions
+
 //=============================================================================
 // D2PIO_StartMeasurements() Function
 //=============================================================================
@@ -1373,6 +1409,21 @@ bool GDXLib::open(char* deviceName)
 }//end of Scan  }
 */
 
+
+ //=============================================================================
+// selectSensors() Function
+//=============================================================================!@
+   void GDXLib::selectSensors(byte selectedSensors[], int numSensors) {
+
+    // Convert the channel number to a bitmask and populate the payload
+    unsigned long sensorMask = 0;
+    for (int i = 0; i < numSensors; i = i + 1) {
+      sensorMask += (1 << selectedSensors[i]);
+    }
+    g_sensorMask = sensorMask;
+
+   }
+
  //=============================================================================
 // start() Function
 //=============================================================================!@
@@ -1381,8 +1432,10 @@ bool GDXLib::open(char* deviceName)
     Serial.print("**$ calling _StartMeasurements, g_channel: ");
     Serial.println(g_channelNumber); 
   #endif
-  if (!D2PIO_StartMeasurements(g_channelNumber))
-    GoDirectBLE_Error();
+    GDX_StartMeasurements(g_sensorMask);
+
+  //if (!D2PIO_StartMeasurements(g_channelNumber))
+    //GoDirectBLE_Error();
    }
 
  //=============================================================================

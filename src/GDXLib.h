@@ -27,6 +27,7 @@ class GDXLib
     //bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
     bool open(char* deviceName="proximity"); //default arguments added in .h file, not .cpp file
     void stop();
+    void selectSensors(byte selectedSensors[], int numSensors);
     void start();
     void close();
     float readSensor();//a public method
@@ -63,6 +64,7 @@ class GDXLib
     bool D2PIO_GetChannelInfo(byte channelNumber);
     bool D2PIO_GetChannelInfoAll();
     bool D2PIO_Autoset();
+    bool GDX_StartMeasurements(unsigned long sensorMask);
     bool D2PIO_StartMeasurements(byte channelNumber);
     
     void GoDirectBLE_Measure();
