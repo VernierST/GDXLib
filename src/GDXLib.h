@@ -28,11 +28,18 @@ class GDXLib
     bool open(char* deviceName="proximity"); //default arguments added in .h file, not .cpp file
     void stop();
     void selectSensors(byte selectedSensors[], int numSensors);
+    void enableSensor(byte selectedSensor);
     void start();
     void close();
     float readSensor();//a public method
+    void read();
     bool D2PIO_ReadMeasurement(byte buffer[], int timeout, float& measurement);
+    bool GDX_ReadMeasurement(byte buffer[], int timeout);
     float GoDirectBLE_GetMeasurement();
+    float getFirstMeasurement();
+    float getSecondMeasurement();
+    float getMeasurement(byte selectedSensor);
+    const char* getUnits(byte selectedSensor);
     
  private:// 
     char _channelName[32]="channelName";

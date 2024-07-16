@@ -186,8 +186,17 @@ static byte                                        g_rollingCounter = 0;
 static byte                                        g_ReadBuffer[256];
 static unsigned long                               g_MeasurementCounter;
 static float                                       g_measurement;
+static float                                       g_measurement2;
 static int                                         g_RSSIStrength;
 static unsigned long                               g_RSSIAge;
+static int                                         g_numSensors;
+static byte                                        g_buffer[256];
+static byte                                        g_firstEnabledSensor = 0;
+static byte                                        g_secondEnabledSensor = 0;
+static byte                                        g_thirdEnabledSensor = 0;
+static char*                                       g_firstUnits;
+static char*                                       g_secondUnits;
+static char*                                       g_thirdUnits;
 
 
 //=============================================================================
@@ -468,6 +477,102 @@ bool GDXLib::D2PIO_ReadBlocking(byte buffer[], int timeout)
   //D2PIO_Dump("D2PIO << ", buffer);
   return true;
 }
+
+//=============================================================================
+// GDX_ReadMeasurement() Function
+//=============================================================================
+bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
+{
+  
+  byte offset = 0;
+  int timeoutCounter = 0;
+  // Return immediately if there is nothing to do.
+  while (!g_d2pioResponse.valueUpdated()){
+    delay(5);//!!!may not be necessary
+  }
+  while (true)
+  {
+    // Copy the current chunk into the output buffer
+    #if defined DEBUG
+     Serial.print("*");
+     #endif 
+    memcpy(&buffer[offset], g_d2pioResponse.value(), g_d2pioResponse.valueLength());
+    offset = offset + g_d2pioResponse.valueLength();
+    #if defined DEBUG
+        Serial.print("buffer: ");
+        for (int i = 0; i < buffer[1]; i++)
+          {
+            Serial.print(buffer[i], HEX);
+            Serial.print("** ");
+          }
+          Serial.println("end of buffer");
+    #endif
+    // Check if we have received the complete packet
+    #if defined DEBUG
+      Serial.println("complete packet received");
+    #endif 
+    // Now that we have started received a measurement, we must wait for all of it to arrive.
+    if ((offset >= 1) && (offset == buffer[1])){
+       break;
+    }
+  }// end of while(true)
+
+  D2PIO_Dump("D2PIO << ", buffer);
+
+  // Extract normal measurement packets -- NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32
+  // We only take the first measurement from the packet.  The protocol allows
+  // multiple to get stuffed into one packet but we just ignore the extras.
+  if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32)
+  {
+    float record;
+    memcpy(&record, &buffer[9], 4);
+    //measurement = record;
+    g_measurement = record;
+    Serial.print("g measurement: ");
+    Serial.println(g_measurement);
+    Serial.println("");
+
+    if (g_secondEnabledSensor != 0) {
+      float record2;
+      memcpy(&record2, &buffer[13], 4);
+      g_measurement2 = record2;
+      Serial.print("g measurement2: ");
+      Serial.println(g_measurement2);
+      Serial.println("");
+      }
+
+    #if defined DEBUG
+      Serial.print("***measurement in readMeasurement: ");
+      Serial.println(measurement);
+    #endif
+  }
+  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_WIDE_REAL32)
+  {
+    float record;
+    memcpy(&record, &buffer[11], 4);
+    g_measurement = record;
+  }
+  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32)
+  {
+    int32_t recordI32 = 0;
+    memcpy(&recordI32, &buffer[8], 4);
+    g_measurement = recordI32;
+  }
+  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32)
+  {
+    int32_t recordI32 = 0;
+    memcpy(&recordI32, &buffer[8], 4);
+    g_measurement = recordI32;
+  }
+  else
+  {
+    // Other BLOB sub-types not currently supported
+    return false;
+  }
+
+  return true;
+}
+
 //=============================================================================
 // D2PIO_ReadMeasurement() Function
 //=============================================================================
@@ -518,7 +623,21 @@ bool GDXLib::D2PIO_ReadMeasurement(byte buffer[], int timeout, float& measuremen
   {
     float record;
     memcpy(&record, &buffer[9], 4);
-    measurement = record;
+    //measurement = record;
+    g_measurement = record;
+    Serial.print("g measurement: ");
+    Serial.println(g_measurement);
+    Serial.println("");
+
+    if (g_secondEnabledSensor != 0) {
+      float record2;
+      memcpy(&record2, &buffer[13], 4);
+      g_measurement2 = record2;
+      Serial.print("g measurement2: ");
+      Serial.println(g_measurement2);
+      Serial.println("");
+      }
+
     #if defined DEBUG
       Serial.print("***measurement in readMeasurement: ");
       Serial.println(measurement);
@@ -1087,8 +1206,9 @@ bool GDXLib::open(char* deviceName)
   if (!D2PIO_Autoset())//select default channel
     return false;
 
-  if (!D2PIO_GetChannelInfo(g_channelNumber))
-    return false;
+  // if (!D2PIO_GetChannelInfo(g_channelNumber))
+  //   g_firstUnits = g_channelInfo.sensorUnit
+  //   return false;
 
   if (!D2PIO_SetMeasurementPeriod(g_samplePeriodInMilliseconds))
     return false;
@@ -1415,6 +1535,7 @@ bool GDXLib::open(char* deviceName)
 //=============================================================================!@
    void GDXLib::selectSensors(byte selectedSensors[], int numSensors) {
 
+    g_numSensors = numSensors;
     // Convert the channel number to a bitmask and populate the payload
     unsigned long sensorMask = 0;
     for (int i = 0; i < numSensors; i = i + 1) {
@@ -1422,6 +1543,47 @@ bool GDXLib::open(char* deviceName)
     }
     g_sensorMask = sensorMask;
 
+   }
+
+//=============================================================================
+// enableSensor() Function
+//=============================================================================!@
+   void GDXLib::enableSensor(byte selectedSensor) {
+
+    if (g_firstEnabledSensor == 0) {
+      g_firstEnabledSensor = selectedSensor;
+      D2PIO_GetChannelInfo(selectedSensor);
+      g_firstUnits = g_channelInfo.sensorUnit;
+      Serial.print("first units: ");
+      Serial.println(g_firstUnits);
+    }
+    else if (g_secondEnabledSensor == 0) {
+      g_secondEnabledSensor = selectedSensor;
+      D2PIO_GetChannelInfo(selectedSensor);
+      g_secondUnits = g_channelInfo.sensorUnit;
+      Serial.print("second units: ");
+      Serial.println(g_secondUnits);
+    }
+    else {
+      g_thirdEnabledSensor = selectedSensor;
+      D2PIO_GetChannelInfo(selectedSensor);
+      g_thirdUnits = g_channelInfo.sensorUnit;
+    }
+
+    Serial.println("first second and third enabled sensor:  ");
+    Serial.println(g_firstEnabledSensor);
+    Serial.println(g_secondEnabledSensor);
+    Serial.println(g_thirdEnabledSensor);
+
+    // Convert the channel number to a bitmask and populate the payload
+    unsigned long sensorMask = 0;
+
+    if (g_firstEnabledSensor != 0) sensorMask += (1 << g_firstEnabledSensor);
+    if (g_secondEnabledSensor != 0) sensorMask += (1 << g_secondEnabledSensor);
+    if (g_thirdEnabledSensor != 0) sensorMask += (1 << g_thirdEnabledSensor);
+    Serial.print("sensor mask: ");
+    Serial.println(sensorMask);
+    g_sensorMask = sensorMask;
    }
 
  //=============================================================================
@@ -1449,6 +1611,7 @@ float GDXLib::readSensor()
   #endif
   if (!BLE.connected())
      GoDirectBLE_Error();
+
   if(!D2PIO_ReadMeasurement(g_ReadBuffer, 5000, g_measurement)){
       #if defined DEBUG
         delay (5);//is there any reason for this? !!!
@@ -1461,6 +1624,48 @@ float GDXLib::readSensor()
   #endif
   return g_measurement;
   }
+
+//=============================================================================
+// read() Function
+//=============================================================================!@
+void GDXLib::read() 
+{
+GDX_ReadMeasurement(g_ReadBuffer, 5000);
+
+  }
+
+//=============================================================================
+// getMeasurement() Function
+//=============================================================================
+float GDXLib::getMeasurement(byte selectedSensor)
+{
+  
+  if (g_firstEnabledSensor == selectedSensor) return g_measurement;
+  else if (g_secondEnabledSensor == selectedSensor) return g_measurement2;
+  //if (g_firstEnabledSensor == selectedSensor) return g_measurement3;
+  else return 0;
+  
+}
+
+//=============================================================================
+// getUnits() Function
+//=============================================================================
+const char* GDXLib::getUnits(byte selectedSensor)
+{
+  Serial.print("selected sensor: ");
+  Serial.println(selectedSensor);
+  Serial.print("first enabled: ");
+  Serial.println(g_firstEnabledSensor);
+  Serial.print("second enabled: ");
+  Serial.println(g_secondEnabledSensor);
+
+
+  if (g_firstEnabledSensor == selectedSensor) return g_firstUnits;
+  else if (g_secondEnabledSensor == selectedSensor) return g_secondUnits;
+  //if (g_firstEnabledSensor == selectedSensor) return g_thirdUnits;
+  else return "";
+  
+}
 
 //=============================================================================
 // GoDirectBLE_GetStatus() Function//not used!!!
@@ -1586,6 +1791,33 @@ float GDXLib::GoDirectBLE_GetMeasurement()
 {
   return g_measurement;
 }
+
+//=============================================================================
+// GoDirectBLE_getFirstMeasurement()
+//=============================================================================
+float GDXLib::getFirstMeasurement()
+{
+  float record;
+  memcpy(&record, &g_buffer[9], 4);
+  //measurement = record;
+  float firstMeasurement = record;
+  Serial.print("g measurement: ");
+  Serial.println(g_measurement);
+  Serial.println("");
+
+  return firstMeasurement;
+}
+
+
+//=============================================================================
+// GoDirectBLE_getSecondMeasurement() Function NOT USED, BUT SHOULD IT BE?
+//=============================================================================
+float GDXLib::getSecondMeasurement()
+{
+  return g_measurement2;
+}
+
+
 //=============================================================================
 // GoDirectBLE_End() Function 
 //=============================================================================
