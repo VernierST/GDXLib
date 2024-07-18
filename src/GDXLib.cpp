@@ -194,9 +194,16 @@ static byte                                        g_buffer[256];
 static byte                                        g_firstEnabledSensor = 0;
 static byte                                        g_secondEnabledSensor = 0;
 static byte                                        g_thirdEnabledSensor = 0;
-static char*                                       g_firstUnits;
-static char*                                       g_secondUnits;
-static char*                                       g_thirdUnits;
+static char                                       g_firstUnits[16];
+//static char*                                       g_firstUnits[16];
+//static char*                                       g_firstUnits;
+static char                                      g_secondUnits[16];
+//static char*                                       g_secondUnits[16];
+static char                                         g_thirdUnits[16];
+//static char*                                       g_thirdUnits[16];
+//static char*                                       g_firstUnits;
+//static char                                       sensorUnits;
+static char*                                       sensorUnits;
 
 
 //=============================================================================
@@ -900,7 +907,11 @@ bool GDXLib::D2PIO_GetDeviceInfo()
 //=============================================================================
 // D2PIO_GetChannelInfo() Function
 //=============================================================================
-bool GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
+//bool GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
+char* GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
+//char GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
+
+
 {
    #if defined DEBUG
       Serial.println ("***@@@ in D2PIO_GetChannelInfo() Function");
@@ -918,9 +929,10 @@ bool GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
   command[2] = g_rollingCounter--;
   command[3] = D2PIO_CalculateChecksum(command);
 
-  if (!D2PIO_Write(command)) return false;
-  if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;
-
+  //if (!D2PIO_Write(command)) return false;
+  //if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;
+  D2PIO_Write(command);
+  D2PIO_ReadBlocking(g_ReadBuffer, 5000);
   D2PIOGetSensorChannelInfoCmdResponse* pResponse;
   pResponse = (D2PIOGetSensorChannelInfoCmdResponse*)&g_ReadBuffer[6];
   memcpy(&g_channelInfo, pResponse, sizeof(D2PIOGetSensorChannelInfoCmdResponse));
@@ -955,7 +967,13 @@ bool GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
         Serial.print("***  Mutual exclusion mask: 0x");
         Serial.println(pResponse->mutualExclusionMask);
   #endif
-  return true;
+  //sensorUnits = g_channelInfo.sensorUnit;
+  //sensorUnits = *pResponse->sensorUnit;
+  sensorUnits = pResponse->sensorUnit;
+  Serial.print("units in D2PIO: ");
+  Serial.println(sensorUnits);
+  //return true;
+  return sensorUnits;
 }
 //=============================================================================
 // D2PIO_GetChannelInfoAll() Function
@@ -1549,33 +1567,36 @@ bool GDXLib::open(char* deviceName)
 // enableSensor() Function
 //=============================================================================!@
    void GDXLib::enableSensor(byte selectedSensor) {
+    // code to store the selected sensor number in a global variable that 
+    // marks it as enabled. The units for this sensor are stored in
+    // a global variable that can be accessed from getUnits()
 
+    // if firstEnabled does not yet have a sensor number assigned, store it here.
     if (g_firstEnabledSensor == 0) {
       g_firstEnabledSensor = selectedSensor;
-      D2PIO_GetChannelInfo(selectedSensor);
-      g_firstUnits = g_channelInfo.sensorUnit;
-      Serial.print("first units: ");
-      Serial.println(g_firstUnits);
+      // read the units from the GetChannel function, and store a copy of the value
+      // in firstUnits global variable, to be accessed in getUnits()
+      char* fUnits;
+      fUnits = D2PIO_GetChannelInfo(selectedSensor);
+      strcpy(g_firstUnits, fUnits);
     }
+
     else if (g_secondEnabledSensor == 0) {
       g_secondEnabledSensor = selectedSensor;
-      D2PIO_GetChannelInfo(selectedSensor);
-      g_secondUnits = g_channelInfo.sensorUnit;
-      Serial.print("second units: ");
-      Serial.println(g_secondUnits);
+      char* sUnits;
+      sUnits = D2PIO_GetChannelInfo(selectedSensor);
+      strcpy(g_secondUnits, sUnits);
     }
+
     else {
       g_thirdEnabledSensor = selectedSensor;
-      D2PIO_GetChannelInfo(selectedSensor);
-      g_thirdUnits = g_channelInfo.sensorUnit;
+      char* tUnits;
+      tUnits = D2PIO_GetChannelInfo(selectedSensor);
+      strcpy(g_thirdUnits, tUnits);
     }
 
-    Serial.println("first second and third enabled sensor:  ");
-    Serial.println(g_firstEnabledSensor);
-    Serial.println(g_secondEnabledSensor);
-    Serial.println(g_thirdEnabledSensor);
-
-    // Convert the channel number to a bitmask and populate the payload
+    // Convert the channel numbers to a mask and store in a global variable
+    // to be used in the start() function.
     unsigned long sensorMask = 0;
 
     if (g_firstEnabledSensor != 0) sensorMask += (1 << g_firstEnabledSensor);
@@ -1652,19 +1673,23 @@ float GDXLib::getMeasurement(byte selectedSensor)
 //=============================================================================
 const char* GDXLib::getUnits(byte selectedSensor)
 {
-  Serial.print("selected sensor: ");
-  Serial.println(selectedSensor);
-  Serial.print("first enabled: ");
-  Serial.println(g_firstEnabledSensor);
-  Serial.print("second enabled: ");
-  Serial.println(g_secondEnabledSensor);
+  // Serial.print("selected sensor: ");
+  // Serial.println(selectedSensor);
+  // Serial.print("first enabled: ");
+  // Serial.println(g_firstEnabledSensor);
+  // Serial.print("second enabled: ");
+  // Serial.println(g_secondEnabledSensor);
+  // Serial.print("first Units: ");
+  // Serial.println(g_firstUnits);
+  // Serial.print("second Units: ");
+  // Serial.println(g_secondUnits);
 
-
+  //static char emptyReturn = '\0';
   if (g_firstEnabledSensor == selectedSensor) return g_firstUnits;
   else if (g_secondEnabledSensor == selectedSensor) return g_secondUnits;
   //if (g_firstEnabledSensor == selectedSensor) return g_thirdUnits;
-  else return "";
-  
+  //else 
+    //return emptyReturn;
 }
 
 //=============================================================================

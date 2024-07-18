@@ -39,6 +39,7 @@ class GDXLib
     float getFirstMeasurement();
     float getSecondMeasurement();
     float getMeasurement(byte selectedSensor);
+    //char getUnits(byte selectedSensor);
     const char* getUnits(byte selectedSensor);
     
  private:// 
@@ -68,7 +69,9 @@ class GDXLib
     bool D2PIO_GetDefaultChannels(unsigned long& defaultMask);
     bool D2PIO_GetStatus();
     bool D2PIO_GetDeviceInfo();
-    bool D2PIO_GetChannelInfo(byte channelNumber);
+    //bool D2PIO_GetChannelInfo(byte channelNumber);
+    char* D2PIO_GetChannelInfo(byte channelNumber);
+    //char D2PIO_GetChannelInfo(byte channelNumber);
     bool D2PIO_GetChannelInfoAll();
     bool D2PIO_Autoset();
     bool GDX_StartMeasurements(unsigned long sensorMask);
