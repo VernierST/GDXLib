@@ -9,7 +9,7 @@ class GDXLib
  public:
     GDXLib();//definition of the GDXLib class
     
-    void autoID();//this is the function for the autoID code
+    //void autoID();//this is the function for the autoID code
     // it returns calibration information
     char* channelName()        { return _channelName ;};
     const char* deviceName()   { return _deviceName ;};
@@ -27,20 +27,16 @@ class GDXLib
     //bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
     bool open(char* deviceName="proximity"); //default arguments added in .h file, not .cpp file
     void stop();
-    void selectSensors(byte selectedSensors[], int numSensors);
     void enableSensor(byte selectedSensor);
     void start();
     void close();
-    float readSensor();//a public method
+    //float readSensor();//a public method
     void read();
-    bool D2PIO_ReadMeasurement(byte buffer[], int timeout, float& measurement);
     bool GDX_ReadMeasurement(byte buffer[], int timeout);
-    float GoDirectBLE_GetMeasurement();
-    float getFirstMeasurement();
-    float getSecondMeasurement();
     float getMeasurement(byte selectedSensor);
     //char getUnits(byte selectedSensor);
     const char* getUnits(byte selectedSensor);
+    const char* getChannelName(byte selectedSensor);
     
  private:// 
     char _channelName[32]="channelName";
@@ -69,15 +65,11 @@ class GDXLib
     bool D2PIO_GetDefaultChannels(unsigned long& defaultMask);
     bool D2PIO_GetStatus();
     bool D2PIO_GetDeviceInfo();
-    //bool D2PIO_GetChannelInfo(byte channelNumber);
-    char* D2PIO_GetChannelInfo(byte channelNumber);
-    //char D2PIO_GetChannelInfo(byte channelNumber);
+    void D2PIO_GetChannelInfo(byte channelNumber);
     bool D2PIO_GetChannelInfoAll();
     bool D2PIO_Autoset();
     bool GDX_StartMeasurements(unsigned long sensorMask);
-    bool D2PIO_StartMeasurements(byte channelNumber);
-    
-    void GoDirectBLE_Measure();
+   
     void GoDirectBLE_Error();
     void GoDirectBLE_Start();
     bool GoDirectBLE_Scan_For_Name();

@@ -185,26 +185,37 @@ static bool                                        g_autoConnect;
 static byte                                        g_rollingCounter = 0;
 static byte                                        g_ReadBuffer[256];
 static unsigned long                               g_MeasurementCounter;
-static float                                       g_measurement;
+static float                                       g_measurement1;
 static float                                       g_measurement2;
+static float                                       g_measurement3;
+static float                                       g_measurement4;
+static float                                       g_measurement5;
+static float                                       g_measurement6;
+static float                                       g_measurement7;
 static int                                         g_RSSIStrength;
 static unsigned long                               g_RSSIAge;
-static int                                         g_numSensors;
 static byte                                        g_buffer[256];
 static byte                                        g_firstEnabledSensor = 0;
 static byte                                        g_secondEnabledSensor = 0;
 static byte                                        g_thirdEnabledSensor = 0;
-static char                                       g_firstUnits[16];
-//static char*                                       g_firstUnits[16];
-//static char*                                       g_firstUnits;
-static char                                      g_secondUnits[16];
-//static char*                                       g_secondUnits[16];
-static char                                         g_thirdUnits[16];
-//static char*                                       g_thirdUnits[16];
-//static char*                                       g_firstUnits;
-//static char                                       sensorUnits;
-static char*                                       sensorUnits;
-
+static byte                                        g_fourthEnabledSensor = 0;
+static byte                                        g_fifthEnabledSensor = 0;
+static byte                                        g_sixthEnabledSensor = 0;
+static byte                                        g_seventhEnabledSensor = 0;
+static char                                        g_firstUnits[16];
+static char                                        g_firstChannelName[32];
+static char                                        g_secondUnits[16];
+static char                                        g_secondChannelName[32];
+static char                                        g_thirdUnits[16];
+static char                                        g_thirdChannelName[32];
+static char                                        g_fourthUnits[16];
+static char                                        g_fourthChannelName[32];
+static char                                        g_fifthUnits[16];
+static char                                        g_fifthChannelName[32];
+static char                                        g_sixthUnits[16];
+static char                                        g_sixthChannelName[32];
+static char                                        g_seventhUnits[16];
+static char                                        g_seventhChannelName[32];
 
 //=============================================================================
 // DumpGatttService() Function
@@ -534,9 +545,9 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
     float record;
     memcpy(&record, &buffer[9], 4);
     //measurement = record;
-    g_measurement = record;
-    Serial.print("g measurement: ");
-    Serial.println(g_measurement);
+    g_measurement1 = record;
+    Serial.print("g measurement1: ");
+    Serial.println(g_measurement1);
     Serial.println("");
 
     if (g_secondEnabledSensor != 0) {
@@ -545,6 +556,51 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
       g_measurement2 = record2;
       Serial.print("g measurement2: ");
       Serial.println(g_measurement2);
+      Serial.println("");
+      }
+
+    if (g_thirdEnabledSensor != 0) {
+      float record3;
+      memcpy(&record3, &buffer[17], 4);
+      g_measurement3 = record3;
+      Serial.print("g measurement3: ");
+      Serial.println(g_measurement3);
+      Serial.println("");
+      }
+
+    if (g_fourthEnabledSensor != 0) {
+      float record4;
+      memcpy(&record4, &buffer[21], 4);
+      g_measurement4 = record4;
+      Serial.print("g measurement4: ");
+      Serial.println(g_measurement4);
+      Serial.println("");
+      }
+
+    if (g_fifthEnabledSensor != 0) {
+      float record5;
+      memcpy(&record5, &buffer[25], 4);
+      g_measurement5 = record5;
+      Serial.print("g measurement5: ");
+      Serial.println(g_measurement5);
+      Serial.println("");
+      }
+
+    if (g_sixthEnabledSensor != 0) {
+      float record6;
+      memcpy(&record6, &buffer[29], 4);
+      g_measurement6 = record6;
+      Serial.print("g measurement6: ");
+      Serial.println(g_measurement6);
+      Serial.println("");
+      }
+
+    if (g_seventhEnabledSensor != 0) {
+      float record7;
+      memcpy(&record7, &buffer[33], 4);
+      g_measurement7 = record7;
+      Serial.print("g measurement7: ");
+      Serial.println(g_measurement7);
       Serial.println("");
       }
 
@@ -557,19 +613,19 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   {
     float record;
     memcpy(&record, &buffer[11], 4);
-    g_measurement = record;
+    g_measurement1 = record;
   }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32)
   {
     int32_t recordI32 = 0;
     memcpy(&recordI32, &buffer[8], 4);
-    g_measurement = recordI32;
+    g_measurement1 = recordI32;
   }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32)
   {
     int32_t recordI32 = 0;
     memcpy(&recordI32, &buffer[8], 4);
-    g_measurement = recordI32;
+    g_measurement1 = recordI32;
   }
   else
   {
@@ -580,102 +636,6 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   return true;
 }
 
-//=============================================================================
-// D2PIO_ReadMeasurement() Function
-//=============================================================================
-bool GDXLib::D2PIO_ReadMeasurement(byte buffer[], int timeout, float& measurement)
-{
-  #if defined DEBUG
-   Serial.print("in D2PIO_ReadMeasurement ");
-  #endif
-  byte offset = 0;
-  int timeoutCounter = 0;
-  // Return immediately if there is nothing to do.
-  while (!g_d2pioResponse.valueUpdated()){
-    delay(5);//!!!may not be necessary
-  }
-  while (true)
-  {
-    // Copy the current chunk into the output buffer
-    #if defined DEBUG
-     Serial.print("*");
-     #endif 
-    memcpy(&buffer[offset], g_d2pioResponse.value(), g_d2pioResponse.valueLength());
-    offset = offset + g_d2pioResponse.valueLength();
-    #if defined DEBUG
-        Serial.print("buffer: ");
-        for (int i = 0; i < buffer[1]; i++)
-          {
-            Serial.print(buffer[i], HEX);
-            Serial.print("** ");
-          }
-          Serial.println("end of buffer");
-    #endif
-    // Check if we have received the complete packet
-    #if defined DEBUG
-      Serial.println("complete packet received");
-    #endif 
-    // Now that we have started received a measurement, we must wait for all of it to arrive.
-    if ((offset >= 1) && (offset == buffer[1])){
-       break;
-    }
-  }// end of while(true)
-
-  D2PIO_Dump("D2PIO << ", buffer);
-
-  // Extract normal measurement packets -- NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32
-  // We only take the first measurement from the packet.  The protocol allows
-  // multiple to get stuffed into one packet but we just ignore the extras.
-  if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32)
-  {
-    float record;
-    memcpy(&record, &buffer[9], 4);
-    //measurement = record;
-    g_measurement = record;
-    Serial.print("g measurement: ");
-    Serial.println(g_measurement);
-    Serial.println("");
-
-    if (g_secondEnabledSensor != 0) {
-      float record2;
-      memcpy(&record2, &buffer[13], 4);
-      g_measurement2 = record2;
-      Serial.print("g measurement2: ");
-      Serial.println(g_measurement2);
-      Serial.println("");
-      }
-
-    #if defined DEBUG
-      Serial.print("***measurement in readMeasurement: ");
-      Serial.println(measurement);
-    #endif
-  }
-  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_WIDE_REAL32)
-  {
-    float record;
-    memcpy(&record, &buffer[11], 4);
-    measurement = record;
-  }
-  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32)
-  {
-    int32_t recordI32 = 0;
-    memcpy(&recordI32, &buffer[8], 4);
-    measurement = recordI32;
-  }
-  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32)
-  {
-    int32_t recordI32 = 0;
-    memcpy(&recordI32, &buffer[8], 4);
-    measurement = recordI32;
-  }
-  else
-  {
-    // Other BLOB sub-types not currently supported
-    return false;
-  }
-
-  return true;
-}
 //=============================================================================
 // D2PIO_Init() Function
 //=============================================================================
@@ -907,11 +867,10 @@ bool GDXLib::D2PIO_GetDeviceInfo()
 //=============================================================================
 // D2PIO_GetChannelInfo() Function
 //=============================================================================
-//bool GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
-char* GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
-//char GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
+// Get the info for the specific channel and store it in g_ChannelInfo. Get the units
+// and channel name from getUnits() and getChannelName()
 
-
+void GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
 {
    #if defined DEBUG
       Serial.println ("***@@@ in D2PIO_GetChannelInfo() Function");
@@ -923,14 +882,11 @@ char* GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
 
   // Specify the channel number parameter
   command[5] = channelNumber;
-
   // Populate the packet header bytes
   command[1] = sizeof(command);
   command[2] = g_rollingCounter--;
   command[3] = D2PIO_CalculateChecksum(command);
 
-  //if (!D2PIO_Write(command)) return false;
-  //if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;
   D2PIO_Write(command);
   D2PIO_ReadBlocking(g_ReadBuffer, 5000);
   D2PIOGetSensorChannelInfoCmdResponse* pResponse;
@@ -967,14 +923,8 @@ char* GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
         Serial.print("***  Mutual exclusion mask: 0x");
         Serial.println(pResponse->mutualExclusionMask);
   #endif
-  //sensorUnits = g_channelInfo.sensorUnit;
-  //sensorUnits = *pResponse->sensorUnit;
-  sensorUnits = pResponse->sensorUnit;
-  Serial.print("units in D2PIO: ");
-  Serial.println(sensorUnits);
-  //return true;
-  return sensorUnits;
 }
+
 //=============================================================================
 // D2PIO_GetChannelInfoAll() Function
 //=============================================================================
@@ -993,7 +943,8 @@ bool GDXLib::D2PIO_GetChannelInfoAll()
    {
     if (testMask & availableMask)
     {
-      if (!D2PIO_GetChannelInfo(i)) return false;
+      //if (!D2PIO_GetChannelInfo(i)) return false;
+      D2PIO_GetChannelInfo(i);
     }
     testMask = testMask << 1;
    }
@@ -1041,7 +992,8 @@ bool GDXLib::D2PIO_Autoset()
          #endif
          }   
   // Get the channel info
-  if (!D2PIO_GetChannelInfo(g_channelNumber)) return false;
+  //if (!D2PIO_GetChannelInfo(g_channelNumber)) return false;
+  D2PIO_GetChannelInfo(g_channelNumber);
   
   // Set the sample rate according to the typical value for this sensor.
   // However we limit it to about 200ms for the sake of Arduino.
@@ -1091,42 +1043,6 @@ bool GDXLib::GDX_StartMeasurements(unsigned long sensorMask)
   if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;  
   return true;
 }
-//end of D2PIO functions
-
-//=============================================================================
-// D2PIO_StartMeasurements() Function
-//=============================================================================
-bool GDXLib::D2PIO_StartMeasurements(byte channelNumber)
-{
-   #if defined DEBUG
-      Serial.println ("***@@@ in D2PIO_StartMeasurement() Function");
-   #endif
-   byte command[] = {
-    0x58, 0x00, 0x00, 0x00, 0x18,
-    0xFF,
-    0x01,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-  // Convert the channel number to a bitmask and populate the payload
-  unsigned long channelMask = 1;
-  channelMask = channelMask << channelNumber;
-  command[7]  = (channelMask >> 0)  & 0xFF;
-  command[8]  = (channelMask >> 8)  & 0xFF;
-  command[9]  = (channelMask >> 16) & 0xFF;
-  command[10] = (channelMask >> 24) & 0xFF;
-
-  // Populate the packet header bytes
-  command[1] = sizeof(command);
-  command[2] = g_rollingCounter--;
-  command[3] = D2PIO_CalculateChecksum(command);
-
-  if (!D2PIO_Write(command)) return false;
-  if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;  
-  return true;
-}
-//end of D2PIO functions
 
 ///=============================================================================
 // GoDirectBLE_Error() Function// Just added 041920
@@ -1547,52 +1463,91 @@ bool GDXLib::open(char* deviceName)
 }//end of Scan  }
 */
 
-
- //=============================================================================
-// selectSensors() Function
-//=============================================================================!@
-   void GDXLib::selectSensors(byte selectedSensors[], int numSensors) {
-
-    g_numSensors = numSensors;
-    // Convert the channel number to a bitmask and populate the payload
-    unsigned long sensorMask = 0;
-    for (int i = 0; i < numSensors; i = i + 1) {
-      sensorMask += (1 << selectedSensors[i]);
-    }
-    g_sensorMask = sensorMask;
-
-   }
-
 //=============================================================================
 // enableSensor() Function
 //=============================================================================!@
    void GDXLib::enableSensor(byte selectedSensor) {
     // code to store the selected sensor number in a global variable that 
-    // marks it as enabled. The units for this sensor are stored in
-    // a global variable that can be accessed from getUnits()
+    // marks it as enabled. Get the units and name for this sensor and store them in
+    // global variables that can be accessed from getUnits() and getSensorName()
 
     // if firstEnabled does not yet have a sensor number assigned, store it here.
     if (g_firstEnabledSensor == 0) {
       g_firstEnabledSensor = selectedSensor;
-      // read the units from the GetChannel function, and store a copy of the value
-      // in firstUnits global variable, to be accessed in getUnits()
-      char* fUnits;
-      fUnits = D2PIO_GetChannelInfo(selectedSensor);
-      strcpy(g_firstUnits, fUnits);
+      char* firstUnits;
+      char* firstName;
+      D2PIO_GetChannelInfo(selectedSensor); //this function stores the ch info in g_channelInfo
+      firstUnits = g_channelInfo.sensorUnit;
+      firstName = g_channelInfo.sensorDescription;
+      strcpy(g_firstUnits, firstUnits);
+      strcpy(g_firstChannelName, firstName);
     }
 
+    // if secondEnabled does not yet have a sensor assigned, assign it selectedSensor
     else if (g_secondEnabledSensor == 0) {
       g_secondEnabledSensor = selectedSensor;
-      char* sUnits;
-      sUnits = D2PIO_GetChannelInfo(selectedSensor);
-      strcpy(g_secondUnits, sUnits);
+      char* secondUnits;
+      char* secondName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      secondUnits = g_channelInfo.sensorUnit;
+      secondName = g_channelInfo.sensorDescription;
+      strcpy(g_secondUnits, secondUnits);
+      strcpy(g_secondChannelName, secondName);
+    }
+
+    else if (g_thirdEnabledSensor = selectedSensor) {
+      g_thirdEnabledSensor = selectedSensor;
+      char* thirdUnits;
+      char* thirdName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      thirdUnits = g_channelInfo.sensorUnit;
+      thirdName = g_channelInfo.sensorDescription;
+      strcpy(g_thirdUnits, thirdUnits);
+      strcpy(g_thirdChannelName, thirdName);
+    }
+
+    else if (g_fourthEnabledSensor = selectedSensor) {
+      g_fourthEnabledSensor = selectedSensor;
+      char* fourthUnits;
+      char* fourthName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      fourthUnits = g_channelInfo.sensorUnit;
+      fourthName = g_channelInfo.sensorDescription;
+      strcpy(g_fourthUnits, fourthUnits);
+      strcpy(g_fourthChannelName, fourthName);
+    }
+
+    else if (g_fifthEnabledSensor = selectedSensor) {
+      g_fifthEnabledSensor = selectedSensor;
+      char* fifthUnits;
+      char* fifthName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      fifthUnits = g_channelInfo.sensorUnit;
+      fifthName = g_channelInfo.sensorDescription;
+      strcpy(g_fifthUnits, fifthUnits);
+      strcpy(g_fifthChannelName, fifthName);
+    }
+
+    else if (g_sixthEnabledSensor = selectedSensor) {
+      g_sixthEnabledSensor = selectedSensor;
+      char* sixthUnits;
+      char* sixthName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      sixthUnits = g_channelInfo.sensorUnit;
+      sixthName = g_channelInfo.sensorDescription;
+      strcpy(g_sixthUnits, sixthUnits);
+      strcpy(g_sixthChannelName, sixthName);
     }
 
     else {
-      g_thirdEnabledSensor = selectedSensor;
-      char* tUnits;
-      tUnits = D2PIO_GetChannelInfo(selectedSensor);
-      strcpy(g_thirdUnits, tUnits);
+      g_seventhEnabledSensor = selectedSensor;
+      char* seventhUnits;
+      char* seventhName;
+      D2PIO_GetChannelInfo(selectedSensor);
+      seventhUnits = g_channelInfo.sensorUnit;
+      seventhName = g_channelInfo.sensorDescription;
+      strcpy(g_seventhUnits, seventhUnits);
+      strcpy(g_seventhChannelName, seventhName);
     }
 
     // Convert the channel numbers to a mask and store in a global variable
@@ -1602,6 +1557,10 @@ bool GDXLib::open(char* deviceName)
     if (g_firstEnabledSensor != 0) sensorMask += (1 << g_firstEnabledSensor);
     if (g_secondEnabledSensor != 0) sensorMask += (1 << g_secondEnabledSensor);
     if (g_thirdEnabledSensor != 0) sensorMask += (1 << g_thirdEnabledSensor);
+    if (g_fourthEnabledSensor != 0) sensorMask += (1 << g_fourthEnabledSensor);
+    if (g_fifthEnabledSensor != 0) sensorMask += (1 << g_fifthEnabledSensor);
+    if (g_sixthEnabledSensor != 0) sensorMask += (1 << g_sixthEnabledSensor);
+    if (g_seventhEnabledSensor != 0) sensorMask += (1 << g_seventhEnabledSensor);
     Serial.print("sensor mask: ");
     Serial.println(sensorMask);
     g_sensorMask = sensorMask;
@@ -1616,40 +1575,15 @@ bool GDXLib::open(char* deviceName)
     Serial.println(g_channelNumber); 
   #endif
     GDX_StartMeasurements(g_sensorMask);
-
-  //if (!D2PIO_StartMeasurements(g_channelNumber))
-    //GoDirectBLE_Error();
    }
-
- //=============================================================================
-// readSensor() Function
-//=============================================================================!@
-float GDXLib::readSensor() 
-{
-  #if defined DEBUG
-        Serial.print("**in readSensor,  samplePeriodInMilliseconds) ");
-        Serial.println(g_samplePeriodInMilliseconds);      
-  #endif
-  if (!BLE.connected())
-     GoDirectBLE_Error();
-
-  if(!D2PIO_ReadMeasurement(g_ReadBuffer, 5000, g_measurement)){
-      #if defined DEBUG
-        delay (5);//is there any reason for this? !!!
-        //Serial.print("#"); 
-      #endif
-      }
-  #if defined DEBUG
-     Serial.print("*** g_measurement back in readSensor: ");
-     Serial.println(g_measurement);
-  #endif
-  return g_measurement;
-  }
 
 //=============================================================================
 // read() Function
 //=============================================================================!@
 void GDXLib::read() 
+// call read at least as fast as the period. This will fill the buffer. Call
+// getMeasurement() to pull the value out of the buffer. Note that the code
+// drops data points if fast data collection sends data back in packets.
 {
 GDX_ReadMeasurement(g_ReadBuffer, 5000);
 
@@ -1659,11 +1593,17 @@ GDX_ReadMeasurement(g_ReadBuffer, 5000);
 // getMeasurement() Function
 //=============================================================================
 float GDXLib::getMeasurement(byte selectedSensor)
+// The read() function gets the data and stores the measurement(s) in the g_measurement variables
 {
   
-  if (g_firstEnabledSensor == selectedSensor) return g_measurement;
+  if (g_firstEnabledSensor == selectedSensor) return g_measurement1;
   else if (g_secondEnabledSensor == selectedSensor) return g_measurement2;
-  //if (g_firstEnabledSensor == selectedSensor) return g_measurement3;
+  else if (g_thirdEnabledSensor == selectedSensor) return g_measurement3;
+  else if (g_fourthEnabledSensor == selectedSensor) return g_measurement4;
+  else if (g_fifthEnabledSensor == selectedSensor) return g_measurement5;
+  else if (g_sixthEnabledSensor == selectedSensor) return g_measurement6;
+  else if (g_seventhEnabledSensor == selectedSensor) return g_measurement7;
+  
   else return 0;
   
 }
@@ -1672,6 +1612,21 @@ float GDXLib::getMeasurement(byte selectedSensor)
 // getUnits() Function
 //=============================================================================
 const char* GDXLib::getUnits(byte selectedSensor)
+{
+  if (g_firstEnabledSensor == selectedSensor) return g_firstUnits;
+  else if (g_secondEnabledSensor == selectedSensor) return g_secondUnits;
+  else if (g_thirdEnabledSensor == selectedSensor) return g_thirdUnits;
+  else if (g_fourthEnabledSensor == selectedSensor) return g_fourthUnits;
+  else if (g_fifthEnabledSensor == selectedSensor) return g_fifthUnits;
+  else if (g_sixthEnabledSensor == selectedSensor) return g_sixthUnits;
+  else return g_seventhUnits;
+}
+
+
+//=============================================================================
+// getChannelName() Function
+//=============================================================================
+const char* GDXLib::getChannelName(byte selectedSensor)
 {
   // Serial.print("selected sensor: ");
   // Serial.println(selectedSensor);
@@ -1685,13 +1640,12 @@ const char* GDXLib::getUnits(byte selectedSensor)
   // Serial.println(g_secondUnits);
 
   //static char emptyReturn = '\0';
-  if (g_firstEnabledSensor == selectedSensor) return g_firstUnits;
-  else if (g_secondEnabledSensor == selectedSensor) return g_secondUnits;
+  if (g_firstEnabledSensor == selectedSensor) return g_firstChannelName;
+  else if (g_secondEnabledSensor == selectedSensor) return g_secondChannelName;
   //if (g_firstEnabledSensor == selectedSensor) return g_thirdUnits;
-  //else 
+  else  return g_thirdChannelName;
     //return emptyReturn;
 }
-
 //=============================================================================
 // GoDirectBLE_GetStatus() Function//not used!!!
 //=============================================================================
@@ -1809,39 +1763,6 @@ bool GDXLib::GoDirectBLE_DisplayChannelAsInteger()
 {
   return (g_channelInfo.numericMeasType == 1);
 }
-//=============================================================================
-// GoDirectBLE_GetMeasurement() Function NOT USED, BUT SHOULD IT BE?
-//=============================================================================
-float GDXLib::GoDirectBLE_GetMeasurement()
-{
-  return g_measurement;
-}
-
-//=============================================================================
-// GoDirectBLE_getFirstMeasurement()
-//=============================================================================
-float GDXLib::getFirstMeasurement()
-{
-  float record;
-  memcpy(&record, &g_buffer[9], 4);
-  //measurement = record;
-  float firstMeasurement = record;
-  Serial.print("g measurement: ");
-  Serial.println(g_measurement);
-  Serial.println("");
-
-  return firstMeasurement;
-}
-
-
-//=============================================================================
-// GoDirectBLE_getSecondMeasurement() Function NOT USED, BUT SHOULD IT BE?
-//=============================================================================
-float GDXLib::getSecondMeasurement()
-{
-  return g_measurement2;
-}
-
 
 //=============================================================================
 // GoDirectBLE_End() Function 
