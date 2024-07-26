@@ -14,9 +14,9 @@ and it supports samplePeriodInMilliseconds.
 
 GDXLib::GDXLib()
 {}
-char channelName[32];
+//char channelName[32];
 char deviceName[32];
-char channelUnits[16];
+//char channelUnits[16];
 int channelNumber;
 uint8_t chargerStatus;
 int batteryPercent;
@@ -180,7 +180,7 @@ static struct D2PIOGetSensorChannelInfoCmdResponse g_channelInfo;
 static char*                                       g_deviceName;
 static byte                                        g_channelNumber;
 static unsigned long                               g_sensorMask;
-static unsigned long                               g_samplePeriodInMilliseconds;
+//static unsigned long                               g_samplePeriodInMilliseconds;
 static bool                                        g_autoConnect;
 static byte                                        g_rollingCounter = 0;
 static byte                                        g_ReadBuffer[256];
@@ -868,7 +868,7 @@ bool GDXLib::D2PIO_GetDeviceInfo()
 // D2PIO_GetChannelInfo() Function
 //=============================================================================
 // Get the info for the specific channel and store it in g_ChannelInfo. Get the units
-// and channel name from getUnits() and getChannelName()
+// and channel name from getUnits() and getSensorName()
 
 void GDXLib::D2PIO_GetChannelInfo(byte channelNumber)
 {
@@ -950,6 +950,32 @@ bool GDXLib::D2PIO_GetChannelInfoAll()
    }
    return true;
 }
+
+//=============================================================================
+// GDX_getDefaultSensor() Function
+//=============================================================================
+byte GDXLib::GDX_getDefaultSensor()
+{
+   #if defined DEBUG
+      Serial.println ("***in D2PIO_Autoset() Function");
+   #endif
+  unsigned long availableMask = 0;
+  unsigned long defaultMask = 0;
+  unsigned long testMask = 1;
+  byte i;
+  
+  D2PIO_GetAvailableChannels(availableMask);
+  D2PIO_GetDefaultChannels(defaultMask);
+  // Select the first channel number that is called out in the default mask
+  for (i = 0; i < 32; i++)
+  {
+    if (testMask & defaultMask & availableMask) return i;//use the default channel
+    testMask = testMask << 1;
+  }
+  if (i == 32) return 1; //if this did not work, just return 1 as the default
+}
+
+
 //=============================================================================
 // D2PIO_Autoset() Function
 //=============================================================================
@@ -998,9 +1024,9 @@ bool GDXLib::D2PIO_Autoset()
   // Set the sample rate according to the typical value for this sensor.
   // However we limit it to about 200ms for the sake of Arduino.
   // Not sure if this is actually slow enough!?
-  g_samplePeriodInMilliseconds = g_channelInfo.typMeasurementPeriod / 1000;
+  //g_samplePeriodInMilliseconds = g_channelInfo.typMeasurementPeriod / 1000;
   //WE MAY WANT TO REDUCE THE TIME OR GET RID OF LATER!!!
-  if (g_samplePeriodInMilliseconds < 200) g_samplePeriodInMilliseconds = 200;
+  //if (g_samplePeriodInMilliseconds < 200) g_samplePeriodInMilliseconds = 200;
 
   #if defined DEBUG
     Serial.print("***Autoset channel number: ");
@@ -1080,10 +1106,10 @@ bool GDXLib::open(char* deviceName)
   g_deviceName = deviceName;
   //g_channelNumber = channelNumber;
   //g_channelNumber = 255;//this will cause the default channel to be used
-  g_channelNumber = 1;
+  //g_channelNumber = 1;
   //g_samplePeriodInMilliseconds = samplePeriodInMilliseconds;
   //g_samplePeriodInMilliseconds = 0; //does this cause the default to be used?
-  g_samplePeriodInMilliseconds = 1000;
+  //g_samplePeriodInMilliseconds = 1000;
   Serial.print("device name =  ");
   Serial.println(g_deviceName);
   
@@ -1137,28 +1163,26 @@ bool GDXLib::open(char* deviceName)
   if (!D2PIO_GetChannelInfoAll())
     return false;
   
-  if (!D2PIO_Autoset())//select default channel
-    return false;
+  //if (!D2PIO_Autoset())//select default channel
+    //return false;
 
   // if (!D2PIO_GetChannelInfo(g_channelNumber))
   //   g_firstUnits = g_channelInfo.sensorUnit
   //   return false;
 
-  if (!D2PIO_SetMeasurementPeriod(g_samplePeriodInMilliseconds))
-    return false;
+  //if (!D2PIO_SetMeasurementPeriod(g_samplePeriodInMilliseconds))
+    //return false;
 
   _RSSI=GoDirectBLE_GetScanRSSI(); 
   _batteryPercent=GoDirectBLE_GetBatteryStatus();
   _chargeState   =GoDirectBLE_GetChargeStatus();
-  _samplePeriodInMilliseconds =GoDirectBLE_GetSamplePeriod();
+  //_samplePeriodInMilliseconds =GoDirectBLE_GetSamplePeriod();
   _channelNumber =GoDirectBLE_GetChannelNumber();
-  sprintf(_channelName,"%s",GoDirectBLE_GetChannelName());
   sprintf(_deviceName,"%s",GoDirectBLE_GetDeviceName());
   Serial.println("sprintf device name:   ");
   Serial.println(_deviceName);
   sprintf(_orderCode,"%s",GoDirectBLE_GetOrderCode());
   sprintf(_serialNumber,"%s",GoDirectBLE_GetSerialNumber());
-  sprintf(_channelUnits,"%s",GoDirectBLE_GetChannelUnits());
 
   #if defined DEBUG
   Serial.println("***HERE is all the info");
@@ -1471,6 +1495,13 @@ bool GDXLib::open(char* deviceName)
     // marks it as enabled. Get the units and name for this sensor and store them in
     // global variables that can be accessed from getUnits() and getSensorName()
 
+    // if the argument=255, this signifies using the default sensor
+    if (selectedSensor == 255) {
+      selectedSensor = GDX_getDefaultSensor();
+      Serial.print("default sensor = ");
+      Serial.println(selectedSensor);
+    }
+
     // if firstEnabled does not yet have a sensor number assigned, store it here.
     if (g_firstEnabledSensor == 0) {
       g_firstEnabledSensor = selectedSensor;
@@ -1567,13 +1598,14 @@ bool GDXLib::open(char* deviceName)
    }
 
  //=============================================================================
-// start() Function
+// start(unsigned long period) Function
 //=============================================================================!@
-   void GDXLib::start() {
+   void GDXLib::start(unsigned long period) {
     #if defined DEBUG
     Serial.print("**$ calling _StartMeasurements, g_channel: ");
     Serial.println(g_channelNumber); 
-  #endif
+    #endif
+    D2PIO_SetMeasurementPeriod(period);
     GDX_StartMeasurements(g_sensorMask);
    }
 
@@ -1596,7 +1628,7 @@ float GDXLib::getMeasurement(byte selectedSensor)
 // The read() function gets the data and stores the measurement(s) in the g_measurement variables
 {
   
-  if (g_firstEnabledSensor == selectedSensor) return g_measurement1;
+  if (g_firstEnabledSensor == selectedSensor || selectedSensor == 255) return g_measurement1;
   else if (g_secondEnabledSensor == selectedSensor) return g_measurement2;
   else if (g_thirdEnabledSensor == selectedSensor) return g_measurement3;
   else if (g_fourthEnabledSensor == selectedSensor) return g_measurement4;
@@ -1613,7 +1645,7 @@ float GDXLib::getMeasurement(byte selectedSensor)
 //=============================================================================
 const char* GDXLib::getUnits(byte selectedSensor)
 {
-  if (g_firstEnabledSensor == selectedSensor) return g_firstUnits;
+  if (g_firstEnabledSensor == selectedSensor || selectedSensor == 255) return g_firstUnits;
   else if (g_secondEnabledSensor == selectedSensor) return g_secondUnits;
   else if (g_thirdEnabledSensor == selectedSensor) return g_thirdUnits;
   else if (g_fourthEnabledSensor == selectedSensor) return g_fourthUnits;
@@ -1624,40 +1656,37 @@ const char* GDXLib::getUnits(byte selectedSensor)
 
 
 //=============================================================================
-// getChannelName() Function
+// getSensorName() Function
 //=============================================================================
-const char* GDXLib::getChannelName(byte selectedSensor)
-{
-  // Serial.print("selected sensor: ");
-  // Serial.println(selectedSensor);
-  // Serial.print("first enabled: ");
-  // Serial.println(g_firstEnabledSensor);
-  // Serial.print("second enabled: ");
-  // Serial.println(g_secondEnabledSensor);
-  // Serial.print("first Units: ");
-  // Serial.println(g_firstUnits);
-  // Serial.print("second Units: ");
-  // Serial.println(g_secondUnits);
+const char* GDXLib::getSensorName(byte selectedSensor)
+// The user must first call GDX.enableSensor(). That function then stores the sensor 
+// channel number in the g_firstEnabledSensor, g_secondEnabledSensor,
+// etc.. In addition, the channelName and units are stored in global variables, such
+// as g_firstChannelName, g_secondChannelName, etc.. The channel name is retrieved here.
 
-  //static char emptyReturn = '\0';
+{  
   if (g_firstEnabledSensor == selectedSensor) return g_firstChannelName;
   else if (g_secondEnabledSensor == selectedSensor) return g_secondChannelName;
-  //if (g_firstEnabledSensor == selectedSensor) return g_thirdUnits;
-  else  return g_thirdChannelName;
-    //return emptyReturn;
+  else if (g_thirdEnabledSensor == selectedSensor) return g_thirdChannelName;
+  else if (g_fourthEnabledSensor == selectedSensor) return g_fourthChannelName;
+  else if (g_fifthEnabledSensor == selectedSensor) return g_fifthChannelName;
+  else if (g_sixthEnabledSensor == selectedSensor) return g_sixthChannelName;
+  else  return g_seventhChannelName;
 }
-//=============================================================================
-// GoDirectBLE_GetStatus() Function//not used!!!
-//=============================================================================
-void GDXLib::GoDirectBLE_GetStatus(char* strFirmwareVersion1, char* strFirmwareVersion2, byte& batteryPercent)
-{
-  sprintf(strFirmwareVersion1, "%d.%d", g_status.majorVersionMasterCPU, g_status.minorVersionMasterCPU);
-  sprintf(strFirmwareVersion2, "%d.%d", g_status.majorVersionSlaveCPU,  g_status.minorVersionSlaveCPU);
 
-  batteryPercent = g_status.batteryLevelPercent;
-  Serial.print("*** batteryPercent: ");
-  Serial.println(batteryPercent);//this is correct here in the library code
+//=============================================================================
+// getDeviceName() Function
+//=============================================================================
+const char* GDXLib::getDeviceName()
+// 
+
+{  
+  static char strBuffer[32];
+  strcpy(strBuffer, g_peripheral.localName().c_str());
+  const char* pch = strtok(strBuffer, NULL);
+  return pch;
 }
+
 //=============================================================================
 // GoDirectBLE_GetDeviceName() Function
 //=============================================================================
@@ -1684,14 +1713,6 @@ const char* GDXLib::GoDirectBLE_GetDeviceName()
 //}
 
 //=============================================================================
-// GoDirectBLE_GetChannelName() Function
-//=============================================================================
-const char* GDXLib::GoDirectBLE_GetChannelName()
-{
-  return g_channelInfo.sensorDescription;
-}
-
-//=============================================================================
 // GoDirectBLE_GetSerialNumber() Function
 //=============================================================================
 const char* GDXLib::GoDirectBLE_GetSerialNumber()
@@ -1715,19 +1736,12 @@ const char* GDXLib::GoDirectBLE_GetOrderCode()
 }
 
 //=============================================================================
-// GoDirectBLE_GetChannelUnits() Function
-//=============================================================================
-const char* GDXLib::GoDirectBLE_GetChannelUnits()
-{
-  return g_channelInfo.sensorUnit;
-}
-//=============================================================================
 // GoDirectBLE_GetSamplePeriod() Function
 //=============================================================================
-unsigned long GDXLib::GoDirectBLE_GetSamplePeriod()
-{
-  return g_samplePeriodInMilliseconds;
-}
+// unsigned long GDXLib::GoDirectBLE_GetSamplePeriod()
+// {
+//   return g_samplePeriodInMilliseconds;
+// }
 //=============================================================================
 // GoDirectBLE_GetChannelNumber() Function
 //=============================================================================
