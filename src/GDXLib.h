@@ -26,9 +26,9 @@ class GDXLib
     //void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
     //bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
     bool open(char* deviceName); //="proximity" if they want to do proximity pairing
-    void stop();
     void enableSensor(byte selectedSensor); //=255, if the user wants to use the default sensor
     void start(unsigned long period);
+    void stop();
     void close();
     //float readSensor();//a public method
     void read();
@@ -66,29 +66,20 @@ class GDXLib
     bool D2PIO_GetAvailableChannels(unsigned long& availableMask);
     bool D2PIO_GetDefaultChannels(unsigned long& defaultMask);
     bool D2PIO_GetStatus();
-    bool D2PIO_GetDeviceInfo();
     void D2PIO_GetChannelInfo(byte channelNumber);
     bool D2PIO_GetChannelInfoAll();
-    bool D2PIO_Autoset();
     bool GDX_StartMeasurements(unsigned long sensorMask);
+    bool GDX_StopMeasurements();
    
-    void GoDirectBLE_Error();
-    void GoDirectBLE_Start();
     bool GoDirectBLE_Scan_For_Name();
     bool GoDirectBLE_Scan_Proximity();
     bool GoDirectBLE_Connect();
     bool GoDirectBLE_Discover_Attributes();
-    void GoDirectBLE_Reset();
-    void GoDirectBLE_Read();
     int GoDirectBLE_GetScanRSSI();
-    const char* GoDirectBLE_GetDeviceName();
     const char* GoDirectBLE_GetSerialNumber();
     const char* GoDirectBLE_GetOrderCode();
     uint8_t GoDirectBLE_GetBatteryStatus();
     uint8_t GoDirectBLE_GetChargeStatus();
-    int    GoDirectBLE_GetRSSI();
-    unsigned long GoDirectBLE_GetSamplePeriod();
     bool GoDirectBLE_DisplayChannelAsInteger();
-    int GoDirectBLE_GetChannelNumber();
 };
 #endif
