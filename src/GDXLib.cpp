@@ -1,9 +1,7 @@
-/* This is a library to make using Vernier GDX sensors 
- easy using an Arduino which supports the Arduino BLE library
+/* This is a library for using Vernier Go Direct sensors
+ with Arduinos that have support in the Arduino BLE library
  
-Version 0.90 - addition of support for begin(GDX*ACC XXXXXXXXX) and minor clean up
-Also, I changed the word "Begin" to "open"
-and it supports samplePeriodInMilliseconds.
+Version  - 
 ---  
 */
 //#define DEBUG //NOTE THIS PRINTS OUT DECODING STUFF!!!
@@ -19,58 +17,58 @@ int channelNumber;
 uint8_t chargerStatus;
 int batteryPercent;
 //char strBuffer[32];
-char strFW1[16];// These are not used in my code
-char strFW2[16];
+//char strFW1[16];// These are not used in my code
+//char strFW2[16];
 #define D2PIO_CMD_ID_GET_STATUS                          0x10
-#define D2PIO_CMD_ID_START_MEASUREMENTS                  0x18
-#define D2PIO_CMD_ID_STOP_MEASUREMENTS                   0x19
-#define D2PIO_CMD_ID_INIT                                0x1A
-#define D2PIO_CMD_ID_SET_MEASUREMENT_PERIOD              0x1B
-#define D2PIO_CMD_ID_CLEAR_ERROR_FLAGS                   0x34
+//#define D2PIO_CMD_ID_START_MEASUREMENTS                  0x18
+//#define D2PIO_CMD_ID_STOP_MEASUREMENTS                   0x19
+//#define D2PIO_CMD_ID_INIT                                0x1A
+//#define D2PIO_CMD_ID_SET_MEASUREMENT_PERIOD              0x1B
+//#define D2PIO_CMD_ID_CLEAR_ERROR_FLAGS                   0x34
 #define D2PIO_CMD_ID_GET_SENSOR_CHANNEL_INFO             0x50
-#define D2PIO_CMD_ID_GET_SENSOR_CHANNELS_AVAILABLE_MASK  0x51
-#define D2PIO_CMD_ID_DISCONNECT                          0x54
-#define D2PIO_CMD_ID_GET_DEVICE_INFO                     0x55
-#define D2PIO_CMD_ID_GET_SENSOR_CHANNELS_DEFAULT_MASK    0x56
-#define D2PIO_CMD_ID_IDENTIFY                            0x58
-#define D2PIO_CMD_ID_GET_BATTERY_LEVEL                   0x78
+//#define D2PIO_CMD_ID_GET_SENSOR_CHANNELS_AVAILABLE_MASK  0x51
+//#define D2PIO_CMD_ID_DISCONNECT                          0x54
+//#define D2PIO_CMD_ID_GET_DEVICE_INFO                     0x55
+//#define D2PIO_CMD_ID_GET_SENSOR_CHANNELS_DEFAULT_MASK    0x56
+//#define D2PIO_CMD_ID_IDENTIFY                            0x58
+//#define D2PIO_CMD_ID_GET_BATTERY_LEVEL                   0x78
 
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL                   0
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_DIGITAL        1
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_ANALOG         2
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_MULTIPLE_PERIODS         3
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_PERIODIC_DIGITAL_COUNTS  4
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_SIGNED            5
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL                   0
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_DIGITAL        1
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_ANALOG         2
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_MULTIPLE_PERIODS         3
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_PERIODIC_DIGITAL_COUNTS  4
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_SIGNED            5
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32            6
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_WIDE_REAL32              7
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_REAL32    8
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_REAL32    8
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32     9
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32         10
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32         10
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32          11
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NEXT_PERIODIC_TIMESTAMP  12
-#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_DROPPED_MEASUREMENT      13
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NEXT_PERIODIC_TIMESTAMP  12
+//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_DROPPED_MEASUREMENT      13
 
-#define D2PIO_MASK_STATUS_ERROR_CMD_NOT_RECOGNIZED      0x01
-#define D2PIO_MASK_STATUS_ERROR_CMD_IGNORED             0x02
-#define D2PIO_MASK_STATUS_ADC_UNCALIBRATED              0x04
-#define D2PIO_MASK_STATUS_AUTOID_UNCALIBRATED           0x08
-#define D2PIO_MASK_STATUS_ERROR_INTERNAL_ERROR1         0x10
-#define D2PIO_MASK_STATUS_ERROR_AUDIO_CONTROL_FAILURE   0x10
-#define D2PIO_MASK_STATUS_ERROR_INTERNAL_ERROR2         0x20
-#define D2PIO_MASK_STATUS_ERROR_AUDIO_STREAM_FAILURE    0x20
-#define D2PIO_MASK_STATUS_ERROR_MASTER_FIFO_OVERFLOW    0x40
-#define D2PIO_MASK_STATUS_ERROR_DIGITAL_TRANSITION_LOST 0x80
+// #define D2PIO_MASK_STATUS_ERROR_CMD_NOT_RECOGNIZED      0x01
+// #define D2PIO_MASK_STATUS_ERROR_CMD_IGNORED             0x02
+// #define D2PIO_MASK_STATUS_ADC_UNCALIBRATED              0x04
+// #define D2PIO_MASK_STATUS_AUTOID_UNCALIBRATED           0x08
+// #define D2PIO_MASK_STATUS_ERROR_INTERNAL_ERROR1         0x10
+// #define D2PIO_MASK_STATUS_ERROR_AUDIO_CONTROL_FAILURE   0x10
+// #define D2PIO_MASK_STATUS_ERROR_INTERNAL_ERROR2         0x20
+// #define D2PIO_MASK_STATUS_ERROR_AUDIO_STREAM_FAILURE    0x20
+// #define D2PIO_MASK_STATUS_ERROR_MASTER_FIFO_OVERFLOW    0x40
+// #define D2PIO_MASK_STATUS_ERROR_DIGITAL_TRANSITION_LOST 0x80
 
-#define D2PIO_CHARGER_STATE_IDLE     0
-#define D2PIO_CHARGER_STATE_CHARGING 1
-#define D2PIO_CHARGER_STATE_COMPLETE 2
-#define D2PIO_CHARGER_STATE_ERROR    3
+// #define D2PIO_CHARGER_STATE_IDLE     0
+// #define D2PIO_CHARGER_STATE_CHARGING 1
+// #define D2PIO_CHARGER_STATE_COMPLETE 2
+// #define D2PIO_CHARGER_STATE_ERROR    3
 
-#define D2PIO_MAX_ORDERCODE_LENGTH 16
-#define D2PIO_MAX_SERIALNUMBER_LENGTH 16
-#define D2PIO_BLE_ADDRESS_LENGTH 6
-#define D2PIO_MAX_DEVICENAME_LENGTH 32
-#define D2PIO_MAX_DEVICEDESCRIPTION_LENGTH 64
+//#define D2PIO_MAX_ORDERCODE_LENGTH 16
+//#define D2PIO_MAX_SERIALNUMBER_LENGTH 16
+//#define D2PIO_BLE_ADDRESS_LENGTH 6
+//#define D2PIO_MAX_DEVICENAME_LENGTH 32
+//#define D2PIO_MAX_DEVICEDESCRIPTION_LENGTH 64
 #define D2PIO_MAX_NUM_BYTES_IN_SENSOR_DESCRIPTION 60
 #define D2PIO_MAX_NUM_BYTES_IN_SENSOR_UNIT 32
 struct D2PIOGetStatusCmdResponsePayload
@@ -87,9 +85,10 @@ struct D2PIOGetStatusCmdResponsePayload
   uint8_t  chargerState;       //D2PIO_CHARGER_STATE_*
 } __attribute__ ((packed));
 
+/*
 struct D2PIOStartMeasurementsParams
 {
-  int8_t   channel;  /* -1 => all channels specified by channelBits. */
+  int8_t   channel;  // -1 => all channels specified by channelBits.
   uint8_t  sampleAtTime0flag;
   uint32_t channelBits;    //Id's channels that should start taking measurements. Ignored unless (channel == -1).
   int64_t  startTimestamp; //Microseconds since Jan 1 1970 Coordinated Universal Time(aka UTC aka Greenwich Mean Time), (timestamp == 0) => start immediately.
@@ -97,17 +96,18 @@ struct D2PIOStartMeasurementsParams
 
 struct D2PIOStopMeasurementsParams
 {
-  int8_t   channel;  /* -1 => all channels specified by channelBits. */
+  int8_t   channel;  // -1 => all channels specified by channelBits. 
   uint8_t  spare;
   uint32_t channelBits;    //Id's channels that should start taking measurements. Ignored unless (channel == -1).
 } __attribute__ ((packed));
 
 struct D2PIOSetMeasurementPeriodParams
 {
-  int8_t   channel;  /* -1 => all channels specified by channelBits. */
+  int8_t   channel;  // -1 => all channels specified by channelBits.
   uint8_t  spare;
   uint64_t measurementPeriod; //In 'ticks', typically a tick == 1 microsecond
 } __attribute__ ((packed));
+*/
 
 struct D2PIOGetSensorChannelInfoCmdResponse
 {
@@ -129,21 +129,21 @@ struct D2PIOGetSensorChannelInfoCmdResponse
 } __attribute__ ((packed));
 
 //the line below specifies the threshold RSSI for connecting!!!
-#define GDX_BLE_AUTO_CONNECT_RSSI_THRESHOLD -44
-#define GDX_BLE_STATE_RESET      0
-#define GDX_BLE_STATE_SCAN_IDLE  1
-#define GDX_BLE_STATE_SCAN_WEAK  2
-#define GDX_BLE_STATE_SCAN_FLUSH 3
-#define GDX_BLE_STATE_CONNECT    4
-#define GDX_BLE_STATE_DISCOVER   5
-#define GDX_BLE_STATE_STATUS     6
-#define GDX_BLE_STATE_SETUP      7
-#define GDX_BLE_STATE_READY      8
-#define GDX_BLE_STATE_MEASURE    9
-#define GDX_BLE_STATE_IDLE       10
-#define GDX_BLE_STATE_ERROR      11
+// #define GDX_BLE_AUTO_CONNECT_RSSI_THRESHOLD -44
+// #define GDX_BLE_STATE_RESET      0
+// #define GDX_BLE_STATE_SCAN_IDLE  1
+// #define GDX_BLE_STATE_SCAN_WEAK  2
+// #define GDX_BLE_STATE_SCAN_FLUSH 3
+// #define GDX_BLE_STATE_CONNECT    4
+// #define GDX_BLE_STATE_DISCOVER   5
+// #define GDX_BLE_STATE_STATUS     6
+// #define GDX_BLE_STATE_SETUP      7
+// #define GDX_BLE_STATE_READY      8
+// #define GDX_BLE_STATE_MEASURE    9
+// #define GDX_BLE_STATE_IDLE       10
+// #define GDX_BLE_STATE_ERROR      11
 
-static int                                         g_State = GDX_BLE_STATE_RESET;
+// static int                                         g_State = GDX_BLE_STATE_RESET;
 static BLEDevice                                   g_peripheral;
 static BLECharacteristic                           g_d2pioCommand;
 static BLECharacteristic                           g_d2pioResponse;
@@ -153,10 +153,10 @@ static struct D2PIOGetSensorChannelInfoCmdResponse g_channelInfo;
 static char*                                       g_deviceName;
 static unsigned long                               g_sensorMask;
 //static unsigned long                               g_samplePeriodInMilliseconds;
-static bool                                        g_autoConnect;
+//static bool                                        g_autoConnect;
 static byte                                        g_rollingCounter = 0;
 static byte                                        g_ReadBuffer[256];
-static unsigned long                               g_MeasurementCounter;
+//static unsigned long                               g_MeasurementCounter;
 static float                                       g_measurement1;
 static float                                       g_measurement2;
 static float                                       g_measurement3;
@@ -165,8 +165,8 @@ static float                                       g_measurement5;
 static float                                       g_measurement6;
 static float                                       g_measurement7;
 static int                                         g_RSSIStrength;
-static unsigned long                               g_RSSIAge;
-static byte                                        g_buffer[256];
+//static unsigned long                               g_RSSIAge;
+//static byte                                        g_buffer[256];
 static byte                                        g_firstEnabledSensor = 0;
 static byte                                        g_secondEnabledSensor = 0;
 static byte                                        g_thirdEnabledSensor = 0;
@@ -189,6 +189,7 @@ static char                                        g_sixthChannelName[32];
 static char                                        g_seventhUnits[16];
 static char                                        g_seventhChannelName[32];
 
+/*
 //=============================================================================
 // DumpGatttService() Function
 //=============================================================================
@@ -223,11 +224,11 @@ bool GDXLib::DumpGatttService(BLEDevice peripheral, char* uuid)
   #endif
   return true;
 }
+*/
 
 //=============================================================================
 // D2PIO_DiscoverService() Function
 //=============================================================================
-//bool GDXLib::GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
 bool GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
 {
   char uuidService[]  = "d91714ef-28b9-4f91-ba16-f0d9a604f112";
@@ -240,7 +241,7 @@ bool GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
   //Serial.println("***Discovering D2PIO service attributes ...");
   if (!peripheral.discoverService(uuidService))
   {
-    Serial.println("***ERROR: D2PIO service attribute discovery failed!");
+    //Serial.println("***ERROR: D2PIO service attribute discovery failed!");
     return false;
   }
   //Serial.print("***Found D2PIO service ");
@@ -252,7 +253,7 @@ bool GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
   g_d2pioCommand = peripheral.service(uuidService).characteristic(uuidCommand);
   if (!g_d2pioCommand)
   {
-    Serial.println("***ERROR: D2PIO command characteristic discovery failed!");
+    //Serial.println("***ERROR: D2PIO command characteristic discovery failed!");
     return false;
   }
   //Serial.print("***Found D2PIO command characteristic ");
@@ -264,14 +265,14 @@ bool GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
   g_d2pioResponse = peripheral.service(uuidService).characteristic(uuidResponse);
   if (!g_d2pioResponse)
   {
-    Serial.println("***ERROR: D2PIO response characteristic discovery failed!");
+    //Serial.println("***ERROR: D2PIO response characteristic discovery failed!");
     return false;
   }
   //Serial.print("***Found D2PIO response characteristic ");
   //Serial.println(peripheral.service(uuidService).characteristic(uuidResponse).uuid());
 
   if (!g_d2pioResponse.subscribe()) {
-    Serial.println("***ERROR: Failed to subscribe to D2PIO esponse characteristic");
+    //Serial.println("***ERROR: Failed to subscribe to D2PIO esponse characteristic");
     return false;
   }
   //Serial.println("***Subscribed to D2PIO response notifications");
@@ -283,7 +284,6 @@ bool GDXLib::D2PIO_DiscoverService(BLEDevice peripheral)
 //=============================================================================
 // D2PIO_CalculateChecksum() Function
 //=============================================================================
-//byte GDXLib::GDXLib::D2PIO_CalculateChecksum(const byte buffer[])
 byte GDXLib::D2PIO_CalculateChecksum(const byte buffer[])
 {
   byte length   =  buffer[1];
@@ -332,7 +332,7 @@ bool GDXLib::D2PIO_Write(const byte buffer[])
 
     if (!g_d2pioCommand.writeValue(&buffer[offset], lengthChunk))
     {
-      Serial.println("***ERROR: D2PIO_Init write failed");
+      //Serial.println("***ERROR: D2PIO_Init write failed");
       return false;
     }
 
@@ -358,7 +358,7 @@ bool GDXLib::D2PIO_ReadBlocking(byte buffer[], int timeout)
       timeoutCounter++;
       if (timeoutCounter > timeout)
       {
-        Serial.println("***ERROR: D2PIO_ReadBlocking timeout!");
+        //Serial.println("***ERROR: D2PIO_ReadBlocking timeout!");
         return false;
       }
       delay(1);
@@ -424,64 +424,45 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   {
     float record;
     memcpy(&record, &buffer[9], 4);
-    //measurement = record;
     g_measurement1 = record;
-    Serial.print("g measurement1: ");
-    Serial.println(g_measurement1);
-    Serial.println("");
+    // Serial.print("g measurement1: ");
+    // Serial.println(g_measurement1);
+    // Serial.println("");
 
     if (g_secondEnabledSensor != 0) {
       float record2;
       memcpy(&record2, &buffer[13], 4);
       g_measurement2 = record2;
-      Serial.print("g measurement2: ");
-      Serial.println(g_measurement2);
-      Serial.println("");
       }
 
     if (g_thirdEnabledSensor != 0) {
       float record3;
       memcpy(&record3, &buffer[17], 4);
       g_measurement3 = record3;
-      Serial.print("g measurement3: ");
-      Serial.println(g_measurement3);
-      Serial.println("");
       }
 
     if (g_fourthEnabledSensor != 0) {
       float record4;
       memcpy(&record4, &buffer[21], 4);
       g_measurement4 = record4;
-      Serial.print("g measurement4: ");
-      Serial.println(g_measurement4);
-      Serial.println("");
       }
 
     if (g_fifthEnabledSensor != 0) {
       float record5;
       memcpy(&record5, &buffer[25], 4);
       g_measurement5 = record5;
-      Serial.print("g measurement5: ");
-      Serial.println(g_measurement5);
-      Serial.println("");
       }
 
     if (g_sixthEnabledSensor != 0) {
       float record6;
       memcpy(&record6, &buffer[29], 4);
       g_measurement6 = record6;
-      Serial.print("g measurement6: ");
-      Serial.println(g_measurement6);
-      Serial.println("");
       }
 
     if (g_seventhEnabledSensor != 0) {
       float record7;
       memcpy(&record7, &buffer[33], 4);
       g_measurement7 = record7;
-      Serial.print("g measurement7: ");
-      Serial.println(g_measurement7);
-      Serial.println("");
       }
 
     #if defined DEBUG
@@ -776,8 +757,8 @@ bool GDXLib::GDX_StartMeasurements(unsigned long sensorMask)
    #if defined DEBUG
       Serial.println ("***@@@ in D2PIO_StartMeasurement() Function");
    #endif
-   Serial.print("GDX_StartMeasurement sensormask: ");
-   Serial.println(sensorMask);
+  //  Serial.print("GDX_StartMeasurement sensormask: ");
+  //  Serial.println(sensorMask);
    byte command[] = {
     0x58, 0x00, 0x00, 0x00, 0x18,
     0xFF,
@@ -835,9 +816,6 @@ bool GDXLib::open(char* deviceName)
 {
   g_deviceName = deviceName;
   
-  Serial.print("device name =  ");
-  Serial.println(g_deviceName);
-  
   #if defined DEBUG
     Serial.println("***in open()");
     Serial.print("*** searching for "); 
@@ -845,22 +823,21 @@ bool GDXLib::open(char* deviceName)
   #endif
 
   if (!BLE.begin()) {
-      Serial.println("starting Bluetooth® Low Energy module failed");
-      Serial.println("Disconnect, and then reconnect, the Arduino USB cable");
+      // Serial.println("starting Bluetooth® Low Energy module failed");
+      // Serial.println("Disconnect, and then reconnect, the Arduino USB cable");
       return false;
   }
 
   if (g_deviceName == "proximity") {
-    Serial.println("in proximity case..");
+    // Serial.println("in proximity case..");
     if (!GoDirectBLE_Scan_Proximity())
       return false;
   }
   else {
-    Serial.println("in scan for name case..");
+    // Serial.println("in scan for name case..");
     if (!GoDirectBLE_Scan_For_Name())
       return false;
   }
-
 
   if (!GoDirectBLE_Connect())
     return false;
@@ -900,8 +877,7 @@ bool GDXLib::open(char* deviceName)
   Serial.println(_chargeState);
   #endif
   return true;
-}  //end of open(name, ch, rate)
-
+} 
 
 //=============================================================================
 // GoDirectBLE_Scan_Proximity() Function
@@ -909,8 +885,8 @@ bool GDXLib::open(char* deviceName)
   bool GDXLib::GoDirectBLE_Scan_Proximity()
   {
 
-    Serial.print("Begin proximity scan for nearest Go Direct");
-    Serial.println();
+    // Serial.print("Begin proximity scan for nearest Go Direct");
+    // Serial.println();
 
     BLE.scan(false); //
     delay(100);
@@ -925,69 +901,66 @@ bool GDXLib::open(char* deviceName)
 
       // check if a peripheral has been discovered
       BLEDevice peripheral = BLE.available();
-      Serial.print(" i = ");
-      Serial.println(i);
+      // Serial.print(" i = ");
+      // Serial.println(i);
 
       if (peripheral) {
-        Serial.println("Discovered a peripheral");
-        Serial.print("Local Name: ");
+        // Serial.println("Discovered a peripheral");
+        // Serial.print("Local Name: ");
         
         if (peripheral.hasLocalName()) {
-          Serial.println(peripheral.localName());
-          Serial.println("Is this GDX:  ");
+          // Serial.println(peripheral.localName());
+          // Serial.println("Is this GDX:  ");
         
           if ((peripheral.localName()[0] == 'G') &&
           (peripheral.localName()[1] == 'D') &&
           (peripheral.localName()[2] == 'X')) {
           
-            Serial.println("YES");
-            Serial.print("RSSI: ");
-            Serial.println(peripheral.rssi());
+            // Serial.println("YES");
+            // Serial.print("RSSI: ");
+            // Serial.println(peripheral.rssi());
 
             if (peripheral.rssi() > strongest_rssi) {
               strongest_rssi = peripheral.rssi();
               strongest_device = peripheral.localName();
-              Serial.print("Set strongest RSSI to: ");
-              Serial.println(peripheral.localName());
-              Serial.println("");
+              // Serial.print("Set strongest RSSI to: ");
+              // Serial.println(peripheral.localName());
+              // Serial.println("");
               g_peripheral = peripheral;
             }
           }
-          else {
-            Serial.println("NO");
-          }
+          // else {
+          //   Serial.println("NO");
+          // }
         }
       }
-      else {
-        Serial.println("no peripheral found");
-      }
+      // else {
+      //   Serial.println("no peripheral found");
+      // }
       if (i > 10) {
         if (strongest_rssi > threshold) {
-          Serial.println("Discovered proximity device! Scan stopped");
+          //Serial.println("Discovered proximity device! Scan stopped");
           BLE.stopScan();
           break; //device has been found
         }
-        else {
-          Serial.println("no devices with rssi lower than threshold");
-        }
+        // else {
+        //   Serial.println("no devices with rssi lower than threshold");
+        // }
       }
-      Serial.println("delay 100 ms");
       delay(100);
       i ++;
     }  
   return true; //device was found, while loop exited, end Scan For Name
   }
       
-
-
 //=============================================================================
 // GoDirectBLE_Scan_For_Name() Function
 //=============================================================================
   bool GDXLib::GoDirectBLE_Scan_For_Name()
   {
-    Serial.print("Begin BLE Scan for name: ");
-    Serial.println(g_deviceName);
-    Serial.println();
+    // Serial.print("Begin BLE Scan for name: ");
+    // Serial.println(g_deviceName);
+    // Serial.println();
 
     BLE.scanForName(g_deviceName);
     delay(1000);
@@ -997,13 +970,13 @@ bool GDXLib::open(char* deviceName)
       BLEDevice peripheral = BLE.available();
       if (peripheral) {     //escape while loop if found
         // discovered a peripheral
-        Serial.println("Discovered the Go Direct peripheral! Scan stopped");
+        //Serial.println("Discovered the Go Direct peripheral! Scan stopped");
         BLE.stopScan();
         g_peripheral = peripheral;
         break;
       }
     delay(1000);
-    Serial.println(" No peripheral, Scan again");
+    //Serial.println(" No peripheral, Scan again");
     }
     return true;
   } //end Scan
@@ -1014,12 +987,12 @@ bool GDXLib::open(char* deviceName)
   bool GDXLib::GoDirectBLE_Connect()
   {  
     if (!g_peripheral.connect()) {
-      Serial.println("Failed to connect!");
-      Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
+      // Serial.println("Failed to connect!");
+      // Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
       return false;
     }
-    Serial.println("Connected");
-    Serial.println();
+    // Serial.println("Connected");
+    // Serial.println();
     return true;
   }
 
@@ -1029,16 +1002,16 @@ bool GDXLib::open(char* deviceName)
   bool GDXLib::GoDirectBLE_Discover_Attributes()
   {    
     // discover peripheral attributes
-    Serial.println("Discovering attributes ...");
+    //Serial.println("Discovering attributes ...");
     if (!g_peripheral.discoverAttributes()) {
-      Serial.println("Attribute discovery failed!");
-      Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
+      // Serial.println("Attribute discovery failed!");
+      // Serial.println("Disconnect USB cable, reconnect, and run the Upload again");
       g_peripheral.disconnect();
       //BLE.end(); Jorge only suggested peripheral.disonnect(), not BLE.end()
       return false;
     }
     
-    Serial.println("Attributes discovered");
+    //Serial.println("Attributes discovered");
     return true;
   }
 
@@ -1053,8 +1026,8 @@ bool GDXLib::open(char* deviceName)
     // if the argument=255, this signifies using the default sensor
     if (selectedSensor == 255) {
       selectedSensor = GDX_getDefaultSensor();
-      Serial.print("default sensor = ");
-      Serial.println(selectedSensor);
+      // Serial.print("default sensor = ");
+      // Serial.println(selectedSensor);
     }
 
     // if firstEnabled does not yet have a sensor number assigned, store it here.
@@ -1147,8 +1120,8 @@ bool GDXLib::open(char* deviceName)
     if (g_fifthEnabledSensor != 0) sensorMask += (1 << g_fifthEnabledSensor);
     if (g_sixthEnabledSensor != 0) sensorMask += (1 << g_sixthEnabledSensor);
     if (g_seventhEnabledSensor != 0) sensorMask += (1 << g_seventhEnabledSensor);
-    Serial.print("sensor mask: ");
-    Serial.println(sensorMask);
+    // Serial.print("sensor mask: ");
+    // Serial.println(sensorMask);
     g_sensorMask = sensorMask;
    }
 
