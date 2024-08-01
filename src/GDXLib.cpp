@@ -372,12 +372,23 @@ bool GDXLib::D2PIO_ReadBlocking(byte buffer[], int timeout)
     if ((offset >= 1) && (offset == buffer[1])) break;
   }
 
-  //D2PIO_Dump("D2PIO << ", buffer);
+  D2PIO_Dump("D2PIO << ", buffer);
   return true;
 }
 
 //=============================================================================
-// GDX_ReadMeasurement() Function
+/* GDX_ReadMeasurement() Function
+    Get the measurement packet and put it in the buffer.
+    Pull the measurement from the buffer according to the measurement type.
+    This function does not return data, instead it stores each sensor's data 
+    in the global variables g_measurement1, g_measurement2, etc..
+    
+    Note that this code is incomplete. For fast data collection, the packet size grows 
+    in order to keep up with data collection. So a packet may contain multiple data
+    points for each sensor. This code only captures the first of those packets. The
+    other data points are not being captured. In addition, only testing the
+    TYPE_NORMAL_REAL32
+*/
 //=============================================================================
 bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
 {
@@ -409,7 +420,7 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
     #if defined DEBUG
       Serial.println("complete packet received");
     #endif 
-    // Now that we have started received a measurement, we must wait for all of it to arrive.
+    // Now that we have started to receive a measurement, we must wait for all of it to arrive.
     if ((offset >= 1) && (offset == buffer[1])){
        break;
     }
@@ -809,9 +820,14 @@ bool GDXLib::GDX_StopMeasurements()
 }
 
 //=============================================================================
-// open(char* deviceName) Function
+/* open(char* deviceName) Function
+    Call the ArduinoBLE BLE.begin() function to initialize the Arduino boards' BLE.
+    Then scan for either a specific Go Direct device or the nearest.
+    The deviceName argument must be the full name and serial number 
+    in quotation marks(i.e, "GDX-HD 151000C1"), or "proximity" for opening
+    the nearest device (with a threshold that is stronger than -60).
+*/
 //=============================================================================
-// argument must be the device name and serial number or "proximity"
 bool GDXLib::open(char* deviceName)
 {
   g_deviceName = deviceName;
@@ -1016,14 +1032,31 @@ bool GDXLib::open(char* deviceName)
   }
 
 //=============================================================================
-// enableSensor() Function
+/* enableSensor(byte selectedSensor) Function
+    This function allows the user to select a specific sensor for data 
+    collection.
+    
+    Each Go Direct device has one or more onboard sensors. These sensors have a 
+    unique sensor number. Use the sensor number to enable the sensor. Use this same
+    sensor number for all of the other functions that require a selectedSensor argument. 
+    
+    This function takes the selectedSensor number and stores it in a 
+    global variable that marks it as enabled. For example, if the user wants to 
+    collect data from sensor #4 only, this will get stored in the g_firstEnabledSensor
+    global variable. If they want to collect from sensor 4 and 5, then 
+    g_firstEnabledSensor = 4, and g_secondEnabledSensor = 5.
+
+    if the selectedSensor argument=255, this signifies using the default sensor. Use 
+    the 255 value in all of the other functions that require a selectedSensor argument.
+    
+    The units and name for the selected sensor are stored in
+    global variables. See the functions getUnits() and getSensorName(). In addition,
+    the sensor mask is calculated and stored in a global variable to be used in start()
+
+*/
 //=============================================================================!@
    void GDXLib::enableSensor(byte selectedSensor) {
-    // code to store the selected sensor number in a global variable that 
-    // marks it as enabled. Get the units and name for this sensor and store them in
-    // global variables that can be accessed from getUnits() and getSensorName()
 
-    // if the argument=255, this signifies using the default sensor
     if (selectedSensor == 255) {
       selectedSensor = GDX_getDefaultSensor();
       // Serial.print("default sensor = ");
@@ -1126,14 +1159,22 @@ bool GDXLib::open(char* deviceName)
    }
 
  //=============================================================================
-// start(unsigned long period) Function
+/* start(unsigned long period) Function
+    Start collecting data from the sensors that were selected in the enableSensor() function.
+    All of the sensor numbers set with enableSensor() are used to compute a sensor mask. This single
+    value masks all of the individual values of the sensors.
+
+    The period (time between samples) is set in milliseconds. 
+    For example, start(500) has a period of 500 ms or 0.5 seconds, which is the same as 
+    having a sample rate of 2 samples/second. 
+*/
 //=============================================================================!@
    void GDXLib::start(unsigned long period) {
     #if defined DEBUG
     Serial.print("**$ calling start function "); 
     #endif
     D2PIO_SetMeasurementPeriod(period);
-    GDX_StartMeasurements(g_sensorMask);
+    GDX_StartMeasurements(g_sensorMask); 
    }
 
  //=============================================================================
@@ -1147,22 +1188,29 @@ bool GDXLib::open(char* deviceName)
    }
 
 //=============================================================================
-// read() Function
+/* read() Function
+    Call read at least as fast as the period. This will fill the buffer, but does
+    not return data. The getMeasurement() function is used to return the specific 
+    sensor's value out of the buffer.
+
+    Note that the code drops data points if fast data collection sends data back in packets.
+    There is a 5 second timeout, so do not set the period > 5000 ms
+*/
 //=============================================================================!@
 void GDXLib::read() 
-// call read at least as fast as the period. This will fill the buffer. Call
-// getMeasurement() to pull the value out of the buffer. Note that the code
-// drops data points if fast data collection sends data back in packets.
 {
 GDX_ReadMeasurement(g_ReadBuffer, 5000);
 
   }
 
 //=============================================================================
-// getMeasurement() Function
+/* getMeasurement(byte selectedSensor) Function
+    The read() function gets the data and stores the measurement(s) in the g_measurement 
+    global variables. This function is used to retrieve the g_measurement data
+    for the specified sensor.
+*/
 //=============================================================================
 float GDXLib::getMeasurement(byte selectedSensor)
-// The read() function gets the data and stores the measurement(s) in the g_measurement variables
 {
   
   if (g_firstEnabledSensor == selectedSensor || selectedSensor == 255) return g_measurement1;
@@ -1178,7 +1226,12 @@ float GDXLib::getMeasurement(byte selectedSensor)
 }
 
 //=============================================================================
-// getUnits() Function
+/* getUnits(byte selectedSensor) Function
+    The enableSensor() function uses the GetChannelInfo function to get the selected
+    sensor's units and name and store them in global variables (e.g., g_firstUnits, g_firstName). 
+    This function is used to retrieve the g_firstUnits (or g_secondUnits if there are 
+    two sensors enabled) value for the specified sensor.
+*/
 //=============================================================================
 const char* GDXLib::getUnits(byte selectedSensor)
 {
@@ -1193,14 +1246,14 @@ const char* GDXLib::getUnits(byte selectedSensor)
 
 
 //=============================================================================
-// getSensorName() Function
+/* getSensorName(byte selectedSensor) Function
+    The enableSensor() function uses the GetChannelInfo function to get the selected
+    sensor's units and name and store them in global variables (e.g., g_firstUnits, g_firstName). 
+    This function is used to retrieve the g_firstName (or g_secondName if there are 
+    two sensors enabled) value for the specified sensor.
+*/
 //=============================================================================
 const char* GDXLib::getSensorName(byte selectedSensor)
-// The user must first call GDX.enableSensor(). That function then stores the sensor 
-// channel number in the g_firstEnabledSensor, g_secondEnabledSensor,
-// etc.. In addition, the channelName and units are stored in global variables, such
-// as g_firstChannelName, g_secondChannelName, etc.. The channel name is retrieved here.
-
 {  
   if (g_firstEnabledSensor == selectedSensor) return g_firstChannelName;
   else if (g_secondEnabledSensor == selectedSensor) return g_secondChannelName;
