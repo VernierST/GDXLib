@@ -1331,7 +1331,7 @@ bool GDXLib::GoDirectBLE_DisplayChannelAsInteger()
 }
 
 //=============================================================================
-// GoDirectBLE_End() Function 
+// close() Function 
 //=============================================================================
 void GDXLib::close()
 {
