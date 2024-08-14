@@ -1,6 +1,6 @@
 # Getting Started with Vernier Go Direct® Sensors and Arduino®
 
-This guide describes how educators<sup>1</sup> can use [Vernier Go Direct Sensors](https://www.vernier.com/products/sensors/go-direct-sensors/) with Arduino microcontrollers and the GDXLib library. The GDXLib library makes communicating with the sensors on-board most Vernier Go Direct<sup>2</sup> devices possible, and easy, when working with an Arduino which supports the Arduino BLE library.
+This guide describes how educators<sup>1</sup> can use [Vernier Go Direct Sensors](https://www.vernier.com/products/sensors/go-direct-sensors/) with Arduino microcontrollers and the GDXLib library. The GDXLib library makes communicating with the sensors of most Vernier Go Direct<sup>2</sup> devices possible, and easy, when working with an Arduino which supports the Arduino BLE library. The GDXLib library can communicate with up to seven sensors onboard one Go Direct device.
 
 <sup>1</sup> Go Direct sensors are for educational use only. Vernier Science Education does not provide support for home use, industrial use, research, or medical.
 
@@ -30,7 +30,7 @@ A simple example that uses a few of the GDXLib functions is shown below. In this
 6. Y-axis gyro (rad/s)
 7. Z-axis gyro (rad/s)
 
-In the example, the Force channel (1) is enabled and configured to collect data at a period of 1000ms. The data are printed to the Serial Monitor.
+In the example, the Force channel (1) is enabled and configured to collect 10 samples at a period of 1000ms. The data are printed to the Serial Monitor.
 
 ```
 #include "ArduinoBLE.h"
@@ -42,17 +42,22 @@ void setup(){
   delay(6000);
 
   if (!GDX.open("GDX-HD 151000C1")) {
-      Serial.println("Problem starting GDX.open()"); 
-      while (true);  // if error, put the Arduino into a do-nothing loop
+      Serial.println("GDX.open() failed. Disconnect/Reconnect USB");
+      while (true);  //put the Arduino into a do-nothing loop
   }
 
   GDX.enableSensor(1); 
-  GDX.start(1000);
+  
+  GDX.start(1000);  // sample period in milliseconds
+  for (int i = 0; i < 10; i++) {
+    GDX.read();
+    Serial.println(GDX.getMeasurement(1));
+  }
+  GDX.stop();
+  GDX.close();
 }
 
 void loop(){
-  GDX.read();
-  Serial.println(GDX.getMeasurement(1));
 }
 ```
 
@@ -81,11 +86,12 @@ Here is some more information about the functions:
 - The deviceName parameter is a combination of the order code and serial number of the Go Direct device, such as `GDX.open("GDX-HD 151000C1”)`
 - The deviceName parameter can also be set as "proximity" to open the nearest Go Direct device that has a threshold rssi signal stronger than -60, such as `GDX.open("proximity")`
 - The `GDX.open()` function has no timeout. Therefore, it will pause the program indefinitely until it finds and connects the Go Direct device. If your code seems stuck at `GDX.open()` make sure the Go Direct device is turned on and the deviceName parameter is spelled correctly in the code. See the Troubleshooting section if you need more help.
-- If there is a failure with `GDX.open()`, a good coding strategy is to provide some feedback, and then put the Arduino in a do-nothing loop. Often, the fix for a failure is to remove the Arduino from the USB cable (so that it powers off), and then reconnect to the USB cable (power back on). At that point you can see if the program works, or you can re-upload the program.
+- If you receive a failure with `GDX.open()`, disconnecting and reconnecting the Arduino USB cable usually resets the Arduino Bluetooth so that a second try will succeed. 
+- If you power the Arduino off while it is in the middle of collecting data via Bluetooth from the Go Direct sensor, and then try to upload a new sketch, this may cause a failure at `GDX.open()`.
 
  ```
   if (!GDX.open("GDX-HD 151000C1")) {
-      Serial.println("Problem starting GDX.open()"); 
+      Serial.println("GDX.open() failed. Disconnect/Reconnect USB");
       while (true);  // if error, put the Arduino into a do-nothing loop
   }
 ```
@@ -120,7 +126,7 @@ if (!GDX.open("GDX-HD 151000C1")) {
 - It will be important to know what sensors are on your device and what the sensor numbers are. A good list can be found at [Vernier Technical Information Library (TIL) #16315](https://www.vernier.com/til/16315)
 - You must first open the device with `GDX.open()` before enabling the sensor(s) with `GDX.enableSensor()`
 - Only after the sensor(s) have been enabled is it okay to start data collection by calling `GDX.start()`
-- The GDXLib library allows for collecting data from multiple sensors in one program.
+- The GDXLib library allows for collecting data from up to seven sensors from one Go Direct device. 
 
 ```
 // open() code goes before
@@ -241,12 +247,14 @@ void loop(){
 
 - Disconnect the Go Direct device from Bluetooth
 - Stop the Arduino's BLE
+- If your sketch does not include `GDX.close()`, or you terminate the program prior to calling `GDX.close()`, the Arduino's Bluetooth may be left in a strange state. This may lead to a failure with `GDX.open() the next time you try to upload a new sketch. If this happens, disconnect and then reconnect the Arduino's USB cable. This helps to reset the Arduino Bluetooth.
 
 ## Troubleshooting
 
 - In order to enable a specific sensor, you must know the sensor number. A list of sensor numbers can be found at [TIL 16315](https://www.vernier.com/til/16315)
 - Turn on the Go Direct device by pressing its power button. A red Bluetooth LED will begin flashing, indicating that the device is on but not yet connected. Once the Arduino pairs with the Go Direct device, you will see the flashing LED on the device turn to green.
 - Double check that the Go Direct name and serial number are entered properly in the open() function.
+- Disconnect and then reconnect the Arduino's USB cable. This helps to reset the Arduino Bluetooth.
 - It can always be a helpful troubleshooting step to confirm that you can collect data with your Go Direct device running Vernier's [Graphical Analysis App](https://www.vernier.com/downloads/graphical-analysis/)
 - Make sure the battery power of the Go Direct device is good. This can be checked in Graphical Analysis
 - If you are having trouble making a Bluetooth connection to the Go Direct device, try running the example found in Examples >> ArduinoBLE >> Central >> Scan.
