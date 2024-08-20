@@ -38,7 +38,8 @@ class GDXLib
     //char getUnits(byte selectedSensor);
     const char* getUnits(byte selectedSensor);
     const char* getSensorName(byte selectedSensor);
-    const char* getDeviceName();
+    //const char* getDeviceName();
+    String getDeviceName();
     
  private:// 
     char _channelName[32]="channelName";

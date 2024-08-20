@@ -1267,14 +1267,18 @@ const char* GDXLib::getSensorName(byte selectedSensor)
 //=============================================================================
 // getDeviceName() Function
 //=============================================================================
-const char* GDXLib::getDeviceName()
+//const char* GDXLib::getDeviceName()
+String GDXLib::getDeviceName()
 // 
 
 {  
-  static char strBuffer[32];
-  strcpy(strBuffer, g_peripheral.localName().c_str());
-  const char* pch = strtok(strBuffer, NULL);
-  return pch;
+  // this code caused an error when run with ESP32
+  // static char strBuffer[32];
+  // strcpy(strBuffer, g_peripheral.localName().c_str());
+  // const char* pch = strtok(strBuffer, NULL);
+  // return pch;
+
+  return g_peripheral.localName();
 }
 
 //=============================================================================
