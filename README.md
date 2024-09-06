@@ -252,12 +252,13 @@ void loop(){
 ## Troubleshooting
 
 - In order to enable a specific sensor, you must know the sensor number. A list of sensor numbers can be found at [TIL 16315](https://www.vernier.com/til/16315)
-- Turn on the Go Direct device by pressing its power button. A red Bluetooth LED will begin flashing, indicating that the device is on but not yet connected. Once the Arduino pairs with the Go Direct device, you will see the flashing LED on the device turn to green.
 - Double check that the Go Direct name and serial number are entered properly in the open() function.
+- Turn on the Go Direct device after the Upload has finished and after opening the Serial Monitor (if the program prints to the Serial Monitor). This order of operations can help prevent any unintended connections with the device, such as occurs when the Arduino's sketch to be overwritten is trying to connect.
+- Note that when you power on the Go Direct device a red Bluetooth LED will begin flashing. Once the Arduino pairs with the Go Direct device this LED will turn to green.
 - Disconnect and then reconnect the Arduino's USB cable. This helps to reset the Arduino Bluetooth.
 - It can always be a helpful troubleshooting step to confirm that you can collect data with your Go Direct device running Vernier's [Graphical Analysis App](https://www.vernier.com/downloads/graphical-analysis/)
 - Make sure the battery power of the Go Direct device is good. This can be checked in Graphical Analysis
-- If you are having trouble making a Bluetooth connection to the Go Direct device, try running the example found in Examples >> ArduinoBLE >> Central >> Scan.
+- If you cannot make a Bluetooth connection to the Go Direct device, try running the example found in Examples >> ArduinoBLE >> Central >> Scan. The ArduinoBLE library is used in the GDXLib library to make the Bluetooth connection. Running this example may help determine if the ArduinoBLE library is working properly with your Arduino board.
 - Make sure your board's firmware and the ArduinoBLE library is up to date.
 - If you are an educator, contact us at: support@vernier.com
 - Post an issue in GitHub

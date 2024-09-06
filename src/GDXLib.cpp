@@ -1,14 +1,14 @@
 /* This is a library for using Vernier Go Direct sensors
  with Arduinos that have support in the Arduino BLE library
- 
-Version  - 
+
 ---  
 */
+
 //#define DEBUG //NOTE THIS PRINTS OUT DECODING STUFF!!!
 #include "ArduinoBLE.h"
 #include "Arduino.h"
 #include "GDXLib.h"
-#define GDXLib_LIB_VERSION "0.88"//automatically displayed
+#define GDXLib_LIB_VERSION "2.0.0"//automatically displayed
 
 GDXLib::GDXLib()
 {}
