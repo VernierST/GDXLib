@@ -1,6 +1,6 @@
   #ifndef GDXLib_h  
   #define GDXLib_h
-  //define GDXLIB_LIB_VERSION "0.90" // displayed automatically
+  //define GDXLIB_LIB_VERSION "2.0.0" // displayed automatically
   // This is a library to make using GDX sensors easy
   #include "ArduinoBLE.h"
 
@@ -9,7 +9,7 @@ class GDXLib
  public:
     GDXLib();//definition of the GDXLib class
     
-    void autoID();//this is the function for the autoID code
+    //void autoID();//this is the function for the autoID code
     // it returns calibration information
     char* channelName()        { return _channelName ;};
     const char* deviceName()   { return _deviceName ;};
@@ -20,15 +20,26 @@ class GDXLib
     uint8_t chargeState()      { return _chargeState ;};
     int RSSI()                 { return _RSSI ;};
     int channelNumber()        { return _channelNumber ;};
-    unsigned long samplePeriodInMilliseconds() { return _samplePeriodInMilliseconds;};
-    void open();
-    void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    //unsigned long samplePeriodInMilliseconds() { return _samplePeriodInMilliseconds;};
+    //void open();
+    //bool open();
+    //void open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    //bool open(char* deviceName, byte channelNumber, unsigned long samplePeriodInMilliseconds);
+    bool open(char* deviceName); //="proximity" if they want to do proximity pairing
+    void enableSensor(byte selectedSensor); //=255, if the user wants to use the default sensor
+    void start(unsigned long period);
     void stop();
-    void start();
     void close();
-    float readSensor();//a public method
-    bool D2PIO_ReadMeasurement(byte buffer[], int timeout, float& measurement);
-    float GoDirectBLE_GetMeasurement();
+    //float readSensor();//a public method
+    void read();
+    bool GDX_ReadMeasurement(byte buffer[], int timeout);
+    byte GDX_getDefaultSensor();
+    float getMeasurement(byte selectedSensor);
+    //char getUnits(byte selectedSensor);
+    const char* getUnits(byte selectedSensor);
+    const char* getSensorName(byte selectedSensor);
+    //const char* getDeviceName();
+    String getDeviceName();
     
  private:// 
     char _channelName[32]="channelName";
@@ -40,7 +51,7 @@ class GDXLib
     uint8_t _chargeState=0;
     int _RSSI=0;
     int _channelNumber=0;
-    unsigned long _samplePeriodInMilliseconds;
+    //unsigned long _samplePeriodInMilliseconds;
     int  _channel;
     char _strBuffer[32]; //used in Read Sensor
     
@@ -56,30 +67,20 @@ class GDXLib
     bool D2PIO_GetAvailableChannels(unsigned long& availableMask);
     bool D2PIO_GetDefaultChannels(unsigned long& defaultMask);
     bool D2PIO_GetStatus();
-    bool D2PIO_GetDeviceInfo();
-    bool D2PIO_GetChannelInfo(byte channelNumber);
+    void D2PIO_GetChannelInfo(byte channelNumber);
     bool D2PIO_GetChannelInfoAll();
-    bool D2PIO_Autoset();
-    bool D2PIO_StartMeasurements(byte channelNumber);
-    
-    void GoDirectBLE_Measure();
-    void GoDirectBLE_Error();
-    void GoDirectBLE_Start();
-    void GoDirectBLE_Scan();
-    void GoDirectBLE_Reset();
-    void GoDirectBLE_Read();
-    void GoDirectBLE_GetStatus(char* strFirmwareVersion1, char* strFirmwareVersion2, byte& batteryPercent);
+    bool GDX_StartMeasurements(unsigned long sensorMask);
+    bool GDX_StopMeasurements();
+   
+    bool GoDirectBLE_Scan_For_Name();
+    bool GoDirectBLE_Scan_Proximity();
+    bool GoDirectBLE_Connect();
+    bool GoDirectBLE_Discover_Attributes();
     int GoDirectBLE_GetScanRSSI();
-    const char* GoDirectBLE_GetDeviceName();
-    const  char* GoDirectBLE_GetChannelName();
     const char* GoDirectBLE_GetSerialNumber();
     const char* GoDirectBLE_GetOrderCode();
-    const char* GoDirectBLE_GetChannelUnits();
     uint8_t GoDirectBLE_GetBatteryStatus();
     uint8_t GoDirectBLE_GetChargeStatus();
-    int    GoDirectBLE_GetRSSI();
-    unsigned long GoDirectBLE_GetSamplePeriod();
     bool GoDirectBLE_DisplayChannelAsInteger();
-    int GoDirectBLE_GetChannelNumber();
 };
 #endif
