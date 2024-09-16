@@ -8,7 +8,7 @@
 #include "ArduinoBLE.h"
 #include "Arduino.h"
 #include "GDXLib.h"
-#define GDXLib_LIB_VERSION "2.0.0"//automatically displayed
+#define GDXLib_LIB_VERSION "2.0.1"//automatically displayed
 
 GDXLib::GDXLib()
 {}
