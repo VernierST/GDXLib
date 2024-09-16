@@ -1,6 +1,6 @@
   #ifndef GDXLib_h  
   #define GDXLib_h
-  //define GDXLIB_LIB_VERSION "2.0.0" // displayed automatically
+  //define GDXLIB_LIB_VERSION "2.0.1" // displayed automatically
   // This is a library to make using GDX sensors easy
   #include "ArduinoBLE.h"
 
