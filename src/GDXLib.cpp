@@ -41,9 +41,9 @@ int batteryPercent;
 //#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_SIGNED            5
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32            6
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_WIDE_REAL32              7
-//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_REAL32    8
+#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_REAL32    8
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32     9
-//#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32         10
+#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32         10
 #define NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32          11
 //#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_NEXT_PERIODIC_TIMESTAMP  12
 //#define NGI_BLOB_MEAS_BLOB_SUB_TYPE_DROPPED_MEASUREMENT      13
@@ -403,8 +403,9 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   {
     // Copy the current chunk into the output buffer
     #if defined DEBUG
-     Serial.print("*");
-     #endif 
+      Serial.print("*");
+    #endif
+
     memcpy(&buffer[offset], g_d2pioResponse.value(), g_d2pioResponse.valueLength());
     offset = offset + g_d2pioResponse.valueLength();
     #if defined DEBUG
@@ -431,13 +432,19 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   // Extract normal measurement packets -- NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32
   // We only take the first measurement from the packet.  The protocol allows
   // multiple to get stuffed into one packet but we just ignore the extras.
+  
+  // Serial.print("buffer 4: ");
+  // Serial.println(buffer[4]);
+  // Serial.println("");
+
   if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32)
   {
+    // standard measurement type, e.g. Hand Dynamometer or Rotary Motion
     float record;
     memcpy(&record, &buffer[9], 4);
     g_measurement1 = record;
     // Serial.print("g measurement1: ");
-    // Serial.println(g_measurement1);
+    // Serial.println(g_measurement1, 6);
     // Serial.println("");
 
     if (g_secondEnabledSensor != 0) {
@@ -487,6 +494,19 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
     memcpy(&record, &buffer[11], 4);
     g_measurement1 = record;
   }
+  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32)
+  {
+    // measurement type for photogate velocity and acceleration
+    float record;
+    memcpy(&record, &buffer[8], 4);
+    g_measurement1 = record;
+  }
+  else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_REAL32)
+  {
+    float record;
+    memcpy(&record, &buffer[8], 4);
+    g_measurement1 = record;
+  }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_SINGLE_CHANNEL_INT32)
   {
     int32_t recordI32 = 0;
@@ -495,6 +515,7 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_INT32)
   {
+    // measurement type for photogate gate state (blocked/unblocked)
     int32_t recordI32 = 0;
     memcpy(&recordI32, &buffer[8], 4);
     g_measurement1 = recordI32;
@@ -787,7 +808,14 @@ bool GDXLib::GDX_StartMeasurements(unsigned long sensorMask)
   command[1] = sizeof(command);
   command[2] = g_rollingCounter--;
   command[3] = D2PIO_CalculateChecksum(command);
-
+  // Serial.print("command 7: ");
+  // Serial.println(command[7]);
+  // Serial.print("command 8: ");
+  // Serial.println(command[8]);
+  // Serial.print("command 9: ");
+  // Serial.println(command[9]);
+  // Serial.print("command 10: ");
+  // Serial.println(command[10]);
   if (!D2PIO_Write(command)) return false;
   if (!D2PIO_ReadBlocking(g_ReadBuffer, 5000)) return false;  
   return true;
@@ -839,8 +867,15 @@ bool GDXLib::open(char* deviceName)
   #endif
 
   if (!BLE.begin()) {
-      // Serial.println("starting Bluetooth® Low Energy module failed");
-      // Serial.println("Disconnect, and then reconnect, the Arduino USB cable");
+      // // Serial.println("Disconnect, and then reconnect, the Arduino USB cable");
+      #if defined(ARDUINO_UNOWIFIR4)
+        // if it is unor4 wifi, then reset BLE and reboot board
+        static const char RESET[] = "AT+RESET\n";
+        Serial2.write(RESET, sizeof(RESET) - 1);
+        delay(2000);
+        NVIC_SystemReset();
+      #endif
+      
       return false;
   }
 
@@ -1174,7 +1209,7 @@ bool GDXLib::open(char* deviceName)
     Serial.print("**$ calling start function "); 
     #endif
     D2PIO_SetMeasurementPeriod(period);
-    GDX_StartMeasurements(g_sensorMask); 
+    GDX_StartMeasurements(g_sensorMask);
    }
 
  //=============================================================================
@@ -1199,9 +1234,14 @@ bool GDXLib::open(char* deviceName)
 //=============================================================================!@
 void GDXLib::read() 
 {
-GDX_ReadMeasurement(g_ReadBuffer, 5000);
-
+// Why call read twice? Because all boards except uno r4 wifi are
+// sending a bad reading on the first call. Therefore, if the read
+// returns a false (== 0), then call read a second time.
+if (GDX_ReadMeasurement(g_ReadBuffer, 5000) == 0) {
+  // read is false, read again
+  GDX_ReadMeasurement(g_ReadBuffer, 5000);
   }
+}
 
 //=============================================================================
 /* getMeasurement(byte selectedSensor) Function
