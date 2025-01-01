@@ -8,7 +8,7 @@
 #include "ArduinoBLE.h"
 #include "Arduino.h"
 #include "GDXLib.h"
-#define GDXLib_LIB_VERSION "2.0.1"//automatically displayed
+#define GDXLib_LIB_VERSION "2.0.2"//automatically displayed
 
 GDXLib::GDXLib()
 {}
@@ -1122,7 +1122,7 @@ bool GDXLib::open(char* deviceName)
       strcpy(g_secondChannelName, secondName);
     }
 
-    else if (g_thirdEnabledSensor = selectedSensor) {
+    else if (g_thirdEnabledSensor == 0) {
       g_thirdEnabledSensor = selectedSensor;
       char* thirdUnits;
       char* thirdName;
@@ -1133,7 +1133,7 @@ bool GDXLib::open(char* deviceName)
       strcpy(g_thirdChannelName, thirdName);
     }
 
-    else if (g_fourthEnabledSensor = selectedSensor) {
+    else if (g_fourthEnabledSensor == 0) {
       g_fourthEnabledSensor = selectedSensor;
       char* fourthUnits;
       char* fourthName;
@@ -1144,7 +1144,7 @@ bool GDXLib::open(char* deviceName)
       strcpy(g_fourthChannelName, fourthName);
     }
 
-    else if (g_fifthEnabledSensor = selectedSensor) {
+    else if (g_fifthEnabledSensor == 0) {
       g_fifthEnabledSensor = selectedSensor;
       char* fifthUnits;
       char* fifthName;
@@ -1155,7 +1155,7 @@ bool GDXLib::open(char* deviceName)
       strcpy(g_fifthChannelName, fifthName);
     }
 
-    else if (g_sixthEnabledSensor = selectedSensor) {
+    else if (g_sixthEnabledSensor == 0) {
       g_sixthEnabledSensor = selectedSensor;
       char* sixthUnits;
       char* sixthName;
@@ -1294,7 +1294,7 @@ const char* GDXLib::getUnits(byte selectedSensor)
 */
 //=============================================================================
 const char* GDXLib::getSensorName(byte selectedSensor)
-{  
+{    
   if (g_firstEnabledSensor == selectedSensor) return g_firstChannelName;
   else if (g_secondEnabledSensor == selectedSensor) return g_secondChannelName;
   else if (g_thirdEnabledSensor == selectedSensor) return g_thirdChannelName;
