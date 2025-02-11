@@ -1,7 +1,7 @@
 /*
 In the example, a Go Direct device is configured to collect data from
 a specified sensor, at a specified rate and duration. The Serial
-Monitor is used for feedback, and to report the data.
+Monitor is used for feedback, and to display the sensor measurement.
 
 For information on Go Direct sensors, the GDXLib functions, and 
 troubleshooting tips, see the Getting Started Guide at: 
@@ -28,23 +28,22 @@ Steps to Follow:
 GDXLib GDX;
 
 
-// ****** IMPORTANT! CONFIGURE YOUR DEVICE ******
-char* myDevice = "GDX-HD 151000C1"; // put the Go Direct name and serial number here. For example, myDevice = "GDX-HD 151000C1"
+// ****** IMPORTANT! INPUT YOUR DEVICE NAME ******
+char* myDevice = "GDX-HD 151000C1"; // your Go Direct name and serial number. For example, myDevice = "GDX-HD 151000C1"
 byte sensor = 1; // select the device's sensor to read. In most devices, the default sensor is 1
 
-// ****** IMPORTANT! CONFIGURE DATA COLLECTION ******
+// ****** Data Collection Parameters ******
 int sampleRate = 1; // set the data collection sampling rate (samples/second)
 int duration = 10; // set the data collection duration (seconds)
 
-
+// Code to convert the sampleRate to sample period (in seconds and ms) and calculate total numbef of data points
 float periodSec = 1.0/sampleRate; // convert the sample rate (samples/sec) to sample period (seconds)
-unsigned long periodMs = periodSec * 1000; // convert sample period (seconds) to sample period (milliseconds)
+unsigned long periodMs = periodSec * 1000; // convert sample period in seconds to sample period in milliseconds
 int numPointsToCollect = sampleRate * duration + 1; // add 1 because the first point is collected at time = 0
 
 void setup(){
   Serial.begin(9600);
   delay(4000);
-  
   Serial.print("Search for: ");
   Serial.println(myDevice);
 
@@ -59,19 +58,20 @@ void setup(){
 
   GDX.enableSensor(sensor); 
 
-  //print headers using the enabled sensor's name and sensor units
+  //print headers "Time(sec), SensorName(Units)"
   Serial.print("Time(sec)");
   Serial.print(" , ");
   Serial.print(GDX.getSensorName(sensor));
   Serial.print(" ");
   Serial.println(GDX.getUnits(sensor));
 
-  GDX.start(periodMs);  //start sampling at the specified sample period in milliseconds
+  //start sampling at the specified sample period. Note this is in milliseconds
+  GDX.start(periodMs);  
 }
 
 void loop(){
-  int points = 1;
-  float time = 0;
+  int points = 1;  //variable to keep track of how many pts have been collected
+  float time = 0;  //variable to keep track of how much time (in seconds) has elapsed
 
   while (points <= numPointsToCollect){
     GDX.read();
@@ -88,5 +88,5 @@ void loop(){
   Serial.println(); 
   GDX.stop(); 
   GDX.close();
-  while(true); // done. Put Arduino into a do-nothing loop
+  while(true); // collection done. Put Arduino into a do-nothing loop
 }

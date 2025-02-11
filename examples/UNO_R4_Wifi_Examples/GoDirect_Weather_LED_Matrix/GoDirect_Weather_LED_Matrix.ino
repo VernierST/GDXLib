@@ -1,7 +1,7 @@
 /*
-In the example, a Go Direct Weather System is configured to collect Wind Speed,
-Temperature, Relative Humidity, and Barometric Pressure. The LED Matrix
-on the UNO R4 Wifi is used for feedback, and to report the data. 
+In the example, 4 channels of the Go Direct Weather System are
+configured (Wind Speed, Temperature, Relative Humidity, and Barometric
+Pressure). The measurements are displayed on the UNO R4 Wifi LED Matrix. 
 
 For information on Go Direct sensors, the GDXLib functions, and 
 troubleshooting tips, see the Getting Started Guide at: 
@@ -9,17 +9,15 @@ https://github.com/VernierST/GDXLib
 
 Steps to Follow: 
 
-  1. There are 4 important variables to configure. Locate these in the code
-  below and set them appropriately for your device and experimnent.
-    a. Set the 'myDevice' variable with the order code and serial number of your device
-    b. Set the 'sensor' variable with the sensor number to enable
-    c. Set the 'sampleRate' for the experiment (samples/second)
-    c. Set the 'duration' of the experiment (seconds)
-  2. Make sure your Arduino is connected via USB and detected and selected in the IDE
+  1. There is 1 important variable to configure.
+    a. Set the 'myDevice' variable with the order code and serial 
+      number of your device
+  2. Make sure your Arduino is connected via USB and detected and 
+    selected in the IDE
   3. Upload the program
-  4. When the upload is done, look for the Bluetooth icon on the LED Matrix, this 
-  means it is searching for the Go Direct device.
-  5. Turn on your Go Direct device
+  4. When the upload is done, look for the Bluetooth icon on the LED 
+    Matrix, this means it is searching for the Go Direct device.
+  5. Turn on your Go Direct WTHR
   6. The sensor measurments will be displayed on the LED Matrix
 
 Note: The Go Direct Weather has the following sensor channels
@@ -47,23 +45,16 @@ GDXLib GDX;
 ArduinoLEDMatrix matrix;
 
 
-// ****** IMPORTANT! CONFIGURE YOUR DEVICE ******
-char* myDevice = "GDX-WTHR 13400106"; // put the Go Direct name and serial number here. For example, myDevice = "GDX-HD 151000C1"
+// ****** IMPORTANT! INPUT YOUR DEVICE NAME ******
+char* myDevice = "GDX-WTHR 13400106"; // your Go Direct name and serial number. For example, myDevice = "GDX-WTHR 13100004"
+
+// variables to store the active channel numbers
 byte sensor1 = 1; // Wind Speed is on sensor channel 1
 byte sensor2 = 4; // Temperature is on sensor channel 4
 byte sensor3 = 7; // Relative Humidity is on sensor channel  7
 byte sensor4 = 10; // Barometric Pressure is on sensor channel 10
 
-// ****** IMPORTANT! CONFIGURE DATA COLLECTION ******
-float sampleRate = 0.1; // set the data collection sampling rate (samples/second)
-int duration = 40; // set the data collection duration (seconds)
-
-
-float periodSec = 1.0/sampleRate; // convert the sample rate (samples/sec) to sample period (seconds)
-unsigned long periodMs = periodSec * 1000; // convert sample period (seconds) to sample period (milliseconds)
-int numPointsToCollect = sampleRate * duration + 1; // add 1 because the first point is collected at time = 0
-String msg; // variable to store the measurement
-String nameFound;
+// variable to store each channel's name
 String sensorName1;
 String sensorName2;
 String sensorName3;
@@ -85,7 +76,7 @@ void setup(){
   matrix.beginDraw();
   matrix.stroke(0xFFFFFFFF);
   matrix.textScrollSpeed(50);
-  nameFound = GDX.getDeviceName();
+  String nameFound = GDX.getDeviceName();
   matrix.textFont(Font_4x6);
   matrix.beginText(4, 1, 0xFFFFFF);
   matrix.println(nameFound);
@@ -102,7 +93,8 @@ void setup(){
   sensorName3 = GDX.getSensorName(sensor3);
   sensorName4 = GDX.getSensorName(sensor4);
 
-  GDX.start(periodMs);  //start sampling at the specified sample period in milliseconds
+  // start sampling with a period of 20000 ms (20 seconds)  
+  GDX.start(20000);  
 
   //clear the display
   matrix.clear();
@@ -111,9 +103,8 @@ void setup(){
 
 void loop(){
   int points = 1;
-  float time = 0;
 
-  while (points <= numPointsToCollect){
+  while (points <= 5){
     GDX.read();
     float sensorValue1 = GDX.getMeasurement(sensor1);
     float sensorValue2 = GDX.getMeasurement(sensor2);
@@ -129,7 +120,6 @@ void loop(){
     scrollName(sensorName4);
     scrollValue(sensorValue4);
 
-    time = time + periodSec;
     points ++;
   }
   
@@ -154,7 +144,7 @@ void scrollValue(float sensorValue){
     matrix.beginDraw();
     matrix.stroke(0xFFFFFFFF);
     matrix.textScrollSpeed(50);
-    msg = String(sensorValue);
+    String msg = String(sensorValue);
     char text[6];
     msg.toCharArray(text, 6);
     matrix.textFont(Font_4x6);
