@@ -42,7 +42,7 @@ GDXLib GDX;
 
 
 // ****** IMPORTANT! INPUT YOUR DEVICE NAME ******
-char* myDevice = "GDX-WTHR 13400106"; // your Go Direct name and serial number. For example, myDevice = "GDX-WTHR 13100004"
+char* myDevice = "GDX-WTHR 13400106"; // Replace with your Go Direct name and serial number. For example, myDevice = "GDX-WTHR 13100004"
 
 // variables to store the active channel numbers
 byte sensor1 = 1; // Wind Speed is on sensor channel 1
@@ -65,6 +65,7 @@ void setup(){
   Serial.println(GDX.getDeviceName());
   Serial.println();
   
+  //configure all four channels to be active
   GDX.enableSensor(sensor1); 
   GDX.enableSensor(sensor2); 
   GDX.enableSensor(sensor3); 
@@ -85,6 +86,7 @@ void setup(){
 
 void loop(){  
 
+  //data collection loop
   for (int i = 0; i < 10; i++) {
     GDX.read();
     Serial.print(GDX.getMeasurement(sensor1));

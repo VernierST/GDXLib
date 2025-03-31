@@ -1,7 +1,7 @@
 /*
-In the example, a Go Direct device is configured to collect data from
-a specified sensor, at a specified rate and duration. The LED Matrix
-on the UNO R4 Wifi is used for feedback, and to display the measurements.
+In the example, a Go Direct sensor channel is configured for data 
+collection at a specified rate and duration. The LED Matrix
+on the UNO R4 Wifi is used to display the measurements.
 
 For information on Go Direct sensors, the GDXLib functions, and 
 troubleshooting tips, see the Getting Started Guide at: 
@@ -33,7 +33,7 @@ ArduinoLEDMatrix matrix;
 
  
 // ****** IMPORTANT! INPUT YOUR DEVICE NAME ******
-char* myDevice = "GDX-HD 151000C1"; // your Go Direct name and serial number. For example, myDevice = "GDX-HD 151000C1"
+char* myDevice = "GDX-HD 151000C1"; // Replace with your Go Direct name and serial number. For example, myDevice = "GDX-HD 151000C1"
 byte sensor = 1; // select the device's sensor to read. In most devices, the default sensor is 1
 
 
@@ -60,6 +60,7 @@ void setup(){
   matrix.endText(SCROLL_LEFT);
   matrix.endDraw();
 
+  //make the sensor channel active
   GDX.enableSensor(sensor); 
 
   //start sampling at the specified sample period. Note this is in milliseconds

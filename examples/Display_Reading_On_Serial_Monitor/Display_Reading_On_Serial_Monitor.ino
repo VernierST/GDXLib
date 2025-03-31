@@ -1,7 +1,7 @@
 /*
-In the example, a Go Direct device is configured to collect data from
-a specified sensor, at a specified rate and duration. The Serial
-Monitor is used for feedback, and to display the sensor measurement.
+In the example, a Go Direct sensor channel is configured for data 
+collection at a specified rate and duration. The Serial
+Monitor is used to display the measurements. 
 
 For information on Go Direct sensors, the GDXLib functions, and 
 troubleshooting tips, see the Getting Started Guide at: 
@@ -29,8 +29,8 @@ GDXLib GDX;
 
 
 // ****** IMPORTANT! INPUT YOUR DEVICE NAME ******
-char* myDevice = "GDX-HD 151000C1"; // your Go Direct name and serial number. For example, myDevice = "GDX-HD 151000C1"
-byte sensor = 1; // select the device's sensor to read. In most devices, the default sensor is 1
+char* myDevice = "GDX-HD 151000C1"; // Replace with your Go Direct name and serial number. For example, myDevice = "GDX-HD 151000C1"
+byte sensor = 1; // Replace with the device's sensor to read. In most devices, the default sensor is 1
 
 // ****** Data Collection Parameters ******
 int sampleRate = 1; // set the data collection sampling rate (samples/second)
@@ -56,6 +56,7 @@ void setup(){
   Serial.println(GDX.getDeviceName());
   Serial.println();
 
+  //make the sensor channel active 
   GDX.enableSensor(sensor); 
 
   //print headers "Time(sec), SensorName(Units)"
@@ -73,6 +74,7 @@ void loop(){
   int points = 1;  //variable to keep track of how many pts have been collected
   float time = 0;  //variable to keep track of how much time (in seconds) has elapsed
 
+  //data collection loop
   while (points <= numPointsToCollect){
     GDX.read();
     Serial.print(time);
