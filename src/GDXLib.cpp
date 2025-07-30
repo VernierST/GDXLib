@@ -778,7 +778,7 @@ byte GDXLib::GDX_getDefaultSensor()
     if (testMask & defaultMask & availableMask) return i;//use the default channel
     testMask = testMask << 1;
   }
-  if (i == 32) return 1; //if this did not work, just return 1 as the default
+  return 1; //if this did not work, just return 1 as the default
 }
 
 //=============================================================================
