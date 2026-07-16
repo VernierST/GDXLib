@@ -8,7 +8,7 @@
 #include "ArduinoBLE.h"
 #include "Arduino.h"
 #include "GDXLib.h"
-#define GDXLib_LIB_VERSION "2.0.2"//automatically displayed
+#define GDXLib_LIB_VERSION "2.0.3"//automatically displayed
 
 GDXLib::GDXLib()
 {}
@@ -432,6 +432,10 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
   // Extract normal measurement packets -- NGI_BLOB_MEAS_BLOB_SUB_TYPE_NORMAL_REAL32
   // We only take the first measurement from the packet.  The protocol allows
   // multiple to get stuffed into one packet but we just ignore the extras.
+
+  // Serial.print("buffer 1:");
+  // Serial.println(buffer[1]);
+  // Serial.println("");
   
   // Serial.print("buffer 4: ");
   // Serial.println(buffer[4]);
@@ -451,6 +455,9 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
       float record2;
       memcpy(&record2, &buffer[13], 4);
       g_measurement2 = record2;
+      Serial.print("g measurement2: ");
+      Serial.println(g_measurement2, 6);
+      Serial.println("");
       }
 
     if (g_thirdEnabledSensor != 0) {
@@ -489,10 +496,52 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
     #endif
   }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_WIDE_REAL32)
+  // measurement type for ACC
   {
     float record;
     memcpy(&record, &buffer[11], 4);
     g_measurement1 = record;
+
+    if (g_secondEnabledSensor != 0) {
+      float record2;
+      memcpy(&record2, &buffer[15], 4);
+      g_measurement2 = record2;
+      }
+
+    if (g_thirdEnabledSensor != 0) {
+      float record3;
+      memcpy(&record3, &buffer[19], 4);
+      g_measurement3 = record3;
+      }
+
+    if (g_fourthEnabledSensor != 0) {
+      float record4;
+      memcpy(&record4, &buffer[23], 4);
+      g_measurement4 = record4;
+      }
+
+    if (g_fifthEnabledSensor != 0) {
+      float record5;
+      memcpy(&record5, &buffer[27], 4);
+      g_measurement5 = record5;
+      }
+
+    if (g_sixthEnabledSensor != 0) {
+      float record6;
+      memcpy(&record6, &buffer[31], 4);
+      g_measurement6 = record6;
+      }
+
+    if (g_seventhEnabledSensor != 0) {
+      float record7;
+      memcpy(&record7, &buffer[35], 4);
+      g_measurement7 = record7;
+      }
+
+    #if defined DEBUG
+      Serial.print("***measurement in readMeasurement: ");
+      Serial.println(measurement);
+    #endif
   }
   else if (buffer[4] == NGI_BLOB_MEAS_BLOB_SUB_TYPE_APERIODIC_REAL32)
   {
@@ -1190,6 +1239,7 @@ bool GDXLib::open(char* deviceName)
     if (g_seventhEnabledSensor != 0) sensorMask += (1 << g_seventhEnabledSensor);
     // Serial.print("sensor mask: ");
     // Serial.println(sensorMask);
+
     g_sensorMask = sensorMask;
    }
 
