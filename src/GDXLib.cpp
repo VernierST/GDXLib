@@ -455,9 +455,9 @@ bool GDXLib::GDX_ReadMeasurement(byte buffer[], int timeout)
       float record2;
       memcpy(&record2, &buffer[13], 4);
       g_measurement2 = record2;
-      Serial.print("g measurement2: ");
-      Serial.println(g_measurement2, 6);
-      Serial.println("");
+      // Serial.print("g measurement2: ");
+      // Serial.println(g_measurement2, 6);
+      // Serial.println("");
       }
 
     if (g_thirdEnabledSensor != 0) {
